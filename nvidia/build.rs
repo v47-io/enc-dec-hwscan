@@ -34,6 +34,7 @@ fn gen_bindings(path: &Path, out_path: &Path) {
         .header(path.to_str().unwrap())
         .allowlist_item("cu.*")
         .allowlist_item("NV.*")
+        .layout_tests(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .unwrap_or_else(|_| panic!("Unable to generate bindings for {:?}", path));
