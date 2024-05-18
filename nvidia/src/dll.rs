@@ -55,20 +55,24 @@ lazy_static! {
     pub static ref CUDA_INIT_FAILED: Mutex<bool> = Mutex::new(false);
 }
 
+#[cfg(test)]
 pub(crate) fn is_cuda_loaded() -> bool { (*LIBCUDA).is_ok() }
 
-fn is_nvdec_loaded() -> bool { (*LIBCUVIDDEC).is_ok() }
+#[derive(Copy, Clone)]
+pub struct Libs {
+    pub lib_cuda: &'static Library,
+    pub lib_cuviddec: &'static Library,
+    pub lib_nv_encode: &'static Library,
+}
 
-fn is_nvenc_loaded() -> bool { (*LIBNV_ENCODE).is_ok() }
-
-pub fn ensure_available() -> Result<(), NvidiaError> {
-    (*LIBCUDA)?;
+pub fn ensure_available() -> Result<Libs, NvidiaError> {
     cuda_init()?;
 
-    (*LIBCUVIDDEC)?;
-    (*LIBNV_ENCODE)?;
-
-    Ok(())
+    Ok(Libs {
+        lib_cuda: (*LIBCUDA)?,
+        lib_cuviddec: (*LIBCUVIDDEC)?,
+        lib_nv_encode: (*LIBNV_ENCODE)?,
+    })
 }
 
 pub fn cuda_init() -> Result<(), NvidiaError> {
@@ -76,8 +80,8 @@ pub fn cuda_init() -> Result<(), NvidiaError> {
 
     if !*init_handle {
         let sym_cu_init: libloading::Symbol<cuInit> = unsafe {
-            (*LIBCUDA)
-                ?.get(b"cuInit")
+            (*LIBCUDA)?
+                .get(b"cuInit")
                 .expect("cuInit not found in libcuda.so")
         };
 

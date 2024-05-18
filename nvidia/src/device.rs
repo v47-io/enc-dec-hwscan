@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use crate::call_cuda_sym;
 use crate::device::dyn_types::{cuDeviceGet, cuDeviceGetCount, cuDeviceGetName, cuDeviceGetUuid};
-use crate::dll::{ensure_available, LIBCUDA};
+use crate::dll::{ensure_available, Libs};
 use crate::NvidiaError;
 pub use crate::sys::libcuviddec_sys::CUdevice;
 use crate::sys::libcuviddec_sys::CUuuid;
@@ -51,9 +51,7 @@ pub struct CudaDevice {
 }
 
 pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
-    ensure_available()?;
-
-    let lib_cuda = (*LIBCUDA)?;
+    let Libs { lib_cuda, .. } = ensure_available()?;
 
     let sym_cu_device_get: libloading::Symbol<cuDeviceGet> = unsafe { lib_cuda.get(b"cuDeviceGet").unwrap() };
     let sym_cu_device_get_count: libloading::Symbol<cuDeviceGetCount> = unsafe { lib_cuda.get(b"cuDeviceGetCount").unwrap() };
@@ -66,7 +64,7 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
         let mut count = std::mem::zeroed::<c_uint>();
         call_cuda_sym!(sym_cu_device_get_count(&mut count));
 
-        u32::from(count)
+        count
     };
 
     for ordinal in 0..device_count {
@@ -113,7 +111,7 @@ mod tests {
         let devices = enumerate_devices()?;
         dbg!(&devices);
 
-        assert!(devices.len() > 0);
+        assert!(!devices.is_empty());
 
         Ok(())
     }
