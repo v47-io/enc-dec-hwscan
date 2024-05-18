@@ -99,18 +99,19 @@ pub fn cuda_init() -> Result<(), NvidiaError> {
 }
 
 #[macro_export]
+#[allow(clippy::crate_in_macro_def)]
 macro_rules! call_cuda_sym {
-     ($call: expr) => {{
-         use crate::error::NvidiaError;
+    ($call: expr) => {{
+        use crate::error::NvidiaError;
 
-         use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
+        use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
 
-         let curesult = $call;
-         if curesult != cudaError_enum_CUDA_SUCCESS {
-             return Err(NvidiaError::OperationFailed(curesult));
-         }
-     }};
- }
+        let curesult = $call;
+        if curesult != cudaError_enum_CUDA_SUCCESS {
+            return Err(NvidiaError::OperationFailed(curesult));
+        } 
+    }};
+}
 
 #[cfg(test)]
 mod tests {

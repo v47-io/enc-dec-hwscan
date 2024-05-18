@@ -60,36 +60,41 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
 
     let mut devices = Vec::new();
 
-    let device_count = unsafe {
-        let mut count = std::mem::zeroed::<c_uint>();
+    let device_count = {
+        let mut count = unsafe { std::mem::zeroed::<c_uint>() };
         call_cuda_sym!(sym_cu_device_get_count(&mut count));
 
         count
     };
 
     for ordinal in 0..device_count {
-        unsafe {
-            let mut cu_device = std::mem::zeroed::<CUdevice>();
-            call_cuda_sym!(sym_cu_device_get(&mut cu_device, ordinal));
+        let mut cu_device = unsafe { std::mem::zeroed::<CUdevice>() };
+        call_cuda_sym!(sym_cu_device_get(&mut cu_device, ordinal));
 
-            let cu_name_buffer = [0u8; 64];
-            call_cuda_sym!(sym_cu_device_get_name(cu_name_buffer.as_ptr() as *mut c_char, 64, cu_device));
+        let cu_name_buffer = [0u8; 64];
+        call_cuda_sym!(sym_cu_device_get_name(cu_name_buffer.as_ptr() as *mut c_char, 64, cu_device));
 
-            let cu_name_raw = CStr::from_bytes_until_nul(&cu_name_buffer).unwrap();
+        let cu_name_raw = CStr::from_bytes_until_nul(&cu_name_buffer).unwrap();
 
-            let mut cu_uuid_buffer = std::mem::zeroed::<CUuuid>();
-            call_cuda_sym!(sym_cu_device_get_uuid(&mut cu_uuid_buffer, cu_device));
+        let mut cu_uuid_buffer = unsafe { std::mem::zeroed::<CUuuid>() };
+        call_cuda_sym!(sym_cu_device_get_uuid(&mut cu_uuid_buffer, cu_device));
 
-            let uuid = Uuid::from_slice(std::slice::from_raw_parts(cu_uuid_buffer.bytes.as_ptr() as *const u8, 16)).unwrap();
+        let uuid = Uuid::from_slice(
+            unsafe {
+                std::slice::from_raw_parts(
+                    cu_uuid_buffer.bytes.as_ptr() as *const u8,
+                    16,
+                )
+            }
+        ).unwrap();
 
-            devices.push(
-                CudaDevice {
-                    handle: cu_device,
-                    name: cu_name_raw.to_string_lossy().to_string(),
-                    uuid,
-                }
-            )
-        }
+        devices.push(
+            CudaDevice {
+                handle: cu_device,
+                name: cu_name_raw.to_string_lossy().to_string(),
+                uuid,
+            }
+        )
     }
 
     Ok(devices)
