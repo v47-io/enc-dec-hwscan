@@ -32,6 +32,8 @@ fn main() {
 fn gen_bindings(path: &Path, out_path: &Path) {
     let bindings = bindgen::Builder::default()
         .header(path.to_str().unwrap())
+        .allowlist_item("cu.*")
+        .allowlist_item("NV.*")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .unwrap_or_else(|_| panic!("Unable to generate bindings for {:?}", path));
