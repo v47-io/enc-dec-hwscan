@@ -22,6 +22,8 @@ tasks.licenseFormat {
 }
 
 rust {
+    release.set(true)
+
     targets += defaultTarget()
 }
 
