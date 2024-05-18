@@ -18,29 +18,24 @@ use std::ffi::{c_char, c_uint, CStr};
 
 use uuid::Uuid;
 
+use dyn_types::*;
+
 use crate::call_cuda_sym;
-use crate::device::dyn_types::{cuDeviceGet, cuDeviceGetCount, cuDeviceGetName, cuDeviceGetUuid};
 use crate::dll::{ensure_available, Libs};
 use crate::NvidiaError;
 pub use crate::sys::libcuviddec_sys::CUdevice;
 use crate::sys::libcuviddec_sys::CUuuid;
 
+#[allow(non_camel_case_types, dead_code)]
 mod dyn_types {
     use std::ffi::{c_char, c_int, c_uint};
 
     use crate::sys::libcuviddec_sys::{CUdevice, CUresult, CUuuid};
 
-    #[allow(non_camel_case_types, dead_code)]
-    pub type cuDeviceGet = fn(*mut CUdevice, c_uint) -> CUresult;
-
-    #[allow(non_camel_case_types, dead_code)]
-    pub type cuDeviceGetCount = fn(*mut c_uint) -> CUresult;
-
-    #[allow(non_camel_case_types, dead_code)]
-    pub type cuDeviceGetName = fn(*mut c_char, c_int: c_int, CUdevice) -> CUresult;
-
-    #[allow(non_camel_case_types, dead_code)]
-    pub type cuDeviceGetUuid = fn(*mut CUuuid, CUdevice) -> CUresult;
+    pub type cuDeviceGet = unsafe extern fn(*mut CUdevice, c_uint) -> CUresult;
+    pub type cuDeviceGetCount = unsafe extern fn(*mut c_uint) -> CUresult;
+    pub type cuDeviceGetName = unsafe extern fn(*mut c_char, c_int: c_int, CUdevice) -> CUresult;
+    pub type cuDeviceGetUuid = unsafe extern fn(*mut CUuuid, CUdevice) -> CUresult;
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -53,10 +48,10 @@ pub struct CudaDevice {
 pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
     let Libs { lib_cuda, .. } = ensure_available()?;
 
-    let sym_cu_device_get: libloading::Symbol<cuDeviceGet> = unsafe { lib_cuda.get(b"cuDeviceGet").unwrap() };
-    let sym_cu_device_get_count: libloading::Symbol<cuDeviceGetCount> = unsafe { lib_cuda.get(b"cuDeviceGetCount").unwrap() };
-    let sym_cu_device_get_name: libloading::Symbol<cuDeviceGetName> = unsafe { lib_cuda.get(b"cuDeviceGetName").unwrap() };
-    let sym_cu_device_get_uuid: libloading::Symbol<cuDeviceGetUuid> = unsafe { lib_cuda.get(b"cuDeviceGetUuid").unwrap() };
+    let sym_cu_device_get: libloading::Symbol<cuDeviceGet> = unsafe { lib_cuda.get(b"cuDeviceGet\0").unwrap() };
+    let sym_cu_device_get_count: libloading::Symbol<cuDeviceGetCount> = unsafe { lib_cuda.get(b"cuDeviceGetCount\0").unwrap() };
+    let sym_cu_device_get_name: libloading::Symbol<cuDeviceGetName> = unsafe { lib_cuda.get(b"cuDeviceGetName\0").unwrap() };
+    let sym_cu_device_get_uuid: libloading::Symbol<cuDeviceGetUuid> = unsafe { lib_cuda.get(b"cuDeviceGetUuid\0").unwrap() };
 
     let mut devices = Vec::new();
 

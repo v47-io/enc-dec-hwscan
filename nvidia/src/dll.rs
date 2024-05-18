@@ -19,17 +19,18 @@ use std::sync::Mutex;
 use lazy_static::lazy_static;
 use libloading::{Error, Library};
 
-use crate::dll::dyn_types::cuInit;
+use dyn_types::*;
+
 use crate::error::NvidiaError;
 use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
 
+#[allow(non_camel_case_types, dead_code)]
 mod dyn_types {
     use std::ffi::c_uint;
 
     use crate::sys::libcuviddec_sys::CUresult;
 
-    #[allow(non_camel_case_types, dead_code)]
-    pub type cuInit = fn(c_uint: c_uint) -> CUresult;
+    pub type cuInit = unsafe extern fn(c_uint: c_uint) -> CUresult;
 }
 
 lazy_static! {
@@ -81,11 +82,11 @@ pub fn cuda_init() -> Result<(), NvidiaError> {
     if !*init_handle {
         let sym_cu_init: libloading::Symbol<cuInit> = unsafe {
             (*LIBCUDA)?
-                .get(b"cuInit")
+                .get(b"cuInit\0")
                 .expect("cuInit not found in libcuda.so")
         };
 
-        let init_result = sym_cu_init(0);
+        let init_result = unsafe { sym_cu_init(0) };
         if init_result != cudaError_enum_CUDA_SUCCESS {
             let mut init_failed_handle = CUDA_INIT_FAILED.lock().unwrap();
             *init_failed_handle = true;
@@ -106,7 +107,7 @@ macro_rules! call_cuda_sym {
 
         use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
 
-        let curesult = $call;
+        let curesult = unsafe { $call };
         if curesult != cudaError_enum_CUDA_SUCCESS {
             return Err(NvidiaError::OperationFailed(curesult));
         } 
