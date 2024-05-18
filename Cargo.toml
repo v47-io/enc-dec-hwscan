@@ -1,0 +1,15 @@
+[workspace]
+members = ["nvidia"]
+resolver = "2"
+
+[package]
+name = "enc_dec_hwscan"
+version = "0.0.0-SNAPSHOT"
+authors = ["Alex Katlein <dev@vemilyus.com>"]
+edition = "2021"
+
+[dependencies]
+nvidia = { path = "./nvidia" }
+
+[lib]
+crate-type = ["cdylib"]
