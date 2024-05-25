@@ -33,4 +33,8 @@ val resetVersionInCargoTomlTask = tasks.resetVersionInCargoTomlTask()
 tasks.build {
     dependsOn(setVersionInCargoTomlTask)
     finalizedBy(resetVersionInCargoTomlTask)
+
+    doFirst {
+        delete(project.layout.buildDirectory.dir("rust"))
+    }
 }

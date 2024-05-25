@@ -1,0 +1,9 @@
+[package]
+name = "common"
+version = "0.0.0-SNAPSHOT"
+edition = "2021"
+authors = ["Alex Katlein <dev@vemilyus.com>"]
+
+[dependencies]
+thiserror = "^1.0.61"
+uuid = "^1.8.0"

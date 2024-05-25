@@ -14,20 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::ptr::drop_in_place;
+mod support;
 
-pub use common::*;
-
-#[no_mangle]
-pub extern "C" fn drop_devices_info(ptr: *mut DevicesInfo) {
-    unsafe {
-        drop_in_place(ptr);
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn find_devices(result: *mut DevicesInfo) -> i32 {
-    unsafe { *result = DevicesInfo::new(&[]) }
-
-    0
-}
+pub use crate::support::*;

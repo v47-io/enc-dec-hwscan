@@ -14,20 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::ptr::drop_in_place;
+extern crate cbindgen;
 
-pub use common::*;
+use std::env;
+use cbindgen::Language;
 
-#[no_mangle]
-pub extern "C" fn drop_devices_info(ptr: *mut DevicesInfo) {
-    unsafe {
-        drop_in_place(ptr);
-    }
-}
+fn main() {
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-#[no_mangle]
-pub extern "C" fn find_devices(result: *mut DevicesInfo) -> i32 {
-    unsafe { *result = DevicesInfo::new(&[]) }
-
-    0
+    cbindgen::Builder::new()
+        .with_crate(crate_dir)
+        .with_parse_deps(true)
+        .with_parse_include(&["common"])
+        .with_language(Language::C)
+        .with_cpp_compat(true)
+        .with_no_includes()
+        .with_sys_include("stdint.h")
+        .generate()
+        .expect("Unable to generate C headers")
+        .write_to_file("target/enc-dec-hwscan.h");
 }
