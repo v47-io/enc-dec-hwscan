@@ -26,4 +26,6 @@ pub enum NvidiaError {
     OperationFailed(cudaError_enum),
     #[error("Nvidia driver not available")]
     NotAvailable,
+    #[error("Symbol not found in library: {0}")]
+    SymbolNotFound(&'static str),
 }

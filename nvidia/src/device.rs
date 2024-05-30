@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use dyn_types::*;
 
-use crate::call_cuda_sym;
+use crate::{call_cuda_sym, get_sym};
 use crate::dll::{ensure_available, Libs};
 use crate::NvidiaError;
 pub use crate::sys::libcuviddec_sys::CUdevice;
@@ -48,10 +48,10 @@ pub struct CudaDevice {
 pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
     let Libs { lib_cuda, .. } = ensure_available()?;
 
-    let sym_cu_device_get: libloading::Symbol<cuDeviceGet> = unsafe { lib_cuda.get(b"cuDeviceGet\0").unwrap() };
-    let sym_cu_device_get_count: libloading::Symbol<cuDeviceGetCount> = unsafe { lib_cuda.get(b"cuDeviceGetCount\0").unwrap() };
-    let sym_cu_device_get_name: libloading::Symbol<cuDeviceGetName> = unsafe { lib_cuda.get(b"cuDeviceGetName\0").unwrap() };
-    let sym_cu_device_get_uuid: libloading::Symbol<cuDeviceGetUuid> = unsafe { lib_cuda.get(b"cuDeviceGetUuid\0").unwrap() };
+    let sym_cu_device_get = get_sym!(lib_cuda, cuDeviceGet);
+    let sym_cu_device_get_count = get_sym!(lib_cuda, cuDeviceGetCount);
+    let sym_cu_device_get_name = get_sym!(lib_cuda, cuDeviceGetName);
+    let sym_cu_device_get_uuid = get_sym!(lib_cuda, cuDeviceGetUuid);
 
     let mut devices = Vec::new();
 
@@ -67,7 +67,13 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
         call_cuda_sym!(sym_cu_device_get(&mut cu_device, ordinal));
 
         let cu_name_buffer = [0u8; 64];
-        call_cuda_sym!(sym_cu_device_get_name(cu_name_buffer.as_ptr() as *mut c_char, 64, cu_device));
+        call_cuda_sym!(
+            sym_cu_device_get_name(
+                cu_name_buffer.as_ptr() as *mut c_char, 
+                cu_name_buffer.len().try_into().unwrap(), 
+                cu_device
+            )
+        );
 
         let cu_name_raw = CStr::from_bytes_until_nul(&cu_name_buffer).unwrap();
 

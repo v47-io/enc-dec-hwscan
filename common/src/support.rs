@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::ffi::c_char;
-use std::fmt::{Display, Formatter};
+use std::ffi::{c_char, CString};
+use std::ptr::slice_from_raw_parts_mut;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -31,24 +31,12 @@ pub enum Codec {
     Av1 = 10,
 }
 
-impl Display for Codec {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Chroma {
     Yuv420 = 420,
     Yuv422 = 422,
     Yuv444 = 444,
-}
-
-impl Display for Chroma {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
 }
 
 #[repr(C)]
@@ -59,35 +47,73 @@ pub enum ColorDepth {
     Bit12 = 12,
 }
 
-impl Display for ColorDepth {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+#[repr(C)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct CodecSupport {
+    codec: Codec,
+    resolutions: *mut u32,
+    num_resolutions: usize,
+    chromas: *mut Chroma,
+    num_chromas: usize,
+    color_depths: *mut ColorDepth,
+    num_color_depths: usize,
+}
+
+impl CodecSupport {
+    pub fn new(
+        codec: Codec,
+        resolutions: Vec<u32>,
+        chromas: Vec<Chroma>,
+        color_depths: Vec<ColorDepth>,
+    ) -> CodecSupport {
+        let (resolutions, num_resolutions) = vec_to_ptr(resolutions);
+        let (chromas, num_chromas) = vec_to_ptr(chromas);
+        let (color_depths, num_color_depths) = vec_to_ptr(color_depths);
+
+        CodecSupport {
+            codec,
+            resolutions,
+            num_resolutions,
+            chromas,
+            num_chromas,
+            color_depths,
+            num_color_depths,
+        }
     }
 }
 
-/// cbindgen:field-names=[codec, chroma, colorDepth]
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct SupportTriple(Codec, Chroma, ColorDepth);
-
-impl Display for SupportTriple {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}/{}/{}", self.0, self.1, self.2)
+impl Drop for CodecSupport {
+    fn drop(&mut self) {
+        unsafe {
+            drop(Box::from_raw(slice_from_raw_parts_mut(self.resolutions, self.num_resolutions)));
+            drop(Box::from_raw(slice_from_raw_parts_mut(self.chromas, self.num_chromas)));
+            drop(Box::from_raw(slice_from_raw_parts_mut(self.color_depths, self.num_color_depths)));
+        }
     }
 }
 
 #[repr(C)]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct DevicesInfo {
-    devices: *const DeviceInfo,
-    num_devices: u32,
+pub struct SupportInfo {
+    devices: *mut Device,
+    num_devices: usize,
 }
 
-impl DevicesInfo {
-    pub fn new(devices: &[DeviceInfo]) -> Self {
+impl SupportInfo {
+    pub fn new(devices: Vec<Device>) -> Self {
+        let (devices, num_devices) = vec_to_ptr(devices);
+
         Self {
-            devices: devices.as_ptr(),
-            num_devices: u32::try_from(devices.len()).unwrap(),
+            devices,
+            num_devices,
+        }
+    }
+}
+
+impl Drop for SupportInfo {
+    fn drop(&mut self) {
+        unsafe {
+            drop(Box::from_raw(slice_from_raw_parts_mut(self.devices, self.num_devices)));
         }
     }
 }
@@ -102,39 +128,56 @@ pub enum Driver {
 
 #[repr(C)]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct DeviceInfo {
+pub struct Device {
     driver: Driver,
     ordinal: u32,
-    name: *const c_char,
-    name_length: u32,
-    path: *const c_char,
-    path_length: u32,
-    decoders: *const SupportTriple,
-    num_decoders: u32,
-    encoders: *const SupportTriple,
-    num_encoders: u32,
+    name: *mut c_char,
+    path: *mut c_char,
+    decoders: *mut CodecSupport,
+    num_decoders: usize,
+    encoders: *mut CodecSupport,
+    num_encoders: usize,
 }
 
-impl DeviceInfo {
+impl Device {
     pub fn new(
         driver: Driver,
         ordinal: u32,
-        name: &str,
-        path: &str,
-        decoders: &[SupportTriple],
-        encoders: &[SupportTriple]
-    ) -> DeviceInfo {
-        DeviceInfo {
+        name: String,
+        path: String,
+        decoders: Vec<CodecSupport>,
+        encoders: Vec<CodecSupport>,
+    ) -> Device {
+        let (decoders, num_decoders) = vec_to_ptr(decoders);
+        let (encoders, num_encoders) = vec_to_ptr(encoders);
+
+        Device {
             driver,
             ordinal,
-            name: name.as_ptr() as *const c_char,
-            name_length: name.bytes().len().try_into().unwrap(),
-            path: path.as_ptr() as *const c_char,
-            path_length: path.bytes().len().try_into().unwrap(),
-            decoders: decoders.as_ptr(),
-            num_decoders: decoders.len().try_into().unwrap(),
-            encoders: encoders.as_ptr(),
-            num_encoders: encoders.len().try_into().unwrap()
+            name: CString::new(name).unwrap().into_raw(),
+            path: CString::new(path).unwrap().into_raw(),
+            decoders,
+            num_decoders,
+            encoders,
+            num_encoders,
         }
     }
+}
+
+impl Drop for Device {
+    fn drop(&mut self) {
+        unsafe {
+            drop(CString::from_raw(self.name));
+            drop(Box::from_raw(slice_from_raw_parts_mut(self.decoders, self.num_decoders)));
+            drop(Box::from_raw(slice_from_raw_parts_mut(self.encoders, self.num_encoders)));
+        }
+    }
+}
+
+fn vec_to_ptr<T>(values: Vec<T>) -> (*mut T, usize) {
+    let boxed = values.into_boxed_slice();
+    let len = boxed.len();
+    let ptr = Box::into_raw(boxed) as *mut _;
+
+    (ptr, len)
 }

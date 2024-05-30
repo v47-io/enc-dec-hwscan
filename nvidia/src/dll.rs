@@ -110,7 +110,22 @@ macro_rules! call_cuda_sym {
         let curesult = unsafe { $call };
         if curesult != cudaError_enum_CUDA_SUCCESS {
             return Err(NvidiaError::OperationFailed(curesult));
-        } 
+        }
+    }};
+}
+
+#[macro_export]
+#[allow(clippy::crate_in_macro_def)]
+macro_rules! get_sym {
+    ($lib_var:expr, $sym_name:ident) => {{
+        use crate::error::NvidiaError;
+        
+        unsafe {
+            match $lib_var.get::<$sym_name>(stringify!($sym_name).as_bytes()) {
+                Ok(sym) => sym,
+                Err(_) => return Err(NvidiaError::SymbolNotFound(stringify!($sym_name)))
+            }
+        }
     }};
 }
 
