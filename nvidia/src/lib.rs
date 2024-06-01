@@ -20,6 +20,6 @@ pub(crate) mod sys;
 pub mod device;
 #[macro_use]
 pub(crate) mod dll;
-mod context;
+pub(crate) mod context;
 mod error;
 mod caps;
