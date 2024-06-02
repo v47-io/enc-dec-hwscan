@@ -33,7 +33,7 @@ fn gen_bindings(path: &Path, out_path: &Path) {
     let bindings = bindgen::Builder::default()
         .header(path.to_str().unwrap())
         .allowlist_item("cu.*")
-        .allowlist_item("NV.*")
+        .allowlist_item("N[Vv].*")
         .layout_tests(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()

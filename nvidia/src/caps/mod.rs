@@ -14,14 +14,5 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-pub use error::*;
-
-pub(crate) mod sys;
-pub mod error;
-#[macro_use]
-pub(crate) mod dll;
-pub mod device;
-pub mod context;
-#[macro_use]
-pub(crate) mod encoder;
-pub mod caps;
+pub mod decode;
+pub mod encode;

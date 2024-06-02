@@ -19,13 +19,13 @@ use std::sync::Mutex;
 use lazy_static::lazy_static;
 use libloading::{Error, Library};
 
-use dyn_types::*;
+use dylib_types::*;
 
 use crate::error::NvidiaError;
 use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
 
 #[allow(non_camel_case_types, dead_code)]
-mod dyn_types {
+mod dylib_types {
     use std::ffi::c_uint;
 
     use crate::sys::libcuviddec_sys::CUresult;

@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::ffi::{c_char, c_uint, CStr};
+use std::ffi::{c_char, CStr};
 
 use uuid::Uuid;
 
-use dyn_types::*;
+use dylib_types::*;
 
 use crate::{call_cuda_sym, get_sym};
 use crate::dll::{ensure_available, Libs};
@@ -27,7 +27,7 @@ pub use crate::sys::libcuviddec_sys::CUdevice;
 use crate::sys::libcuviddec_sys::CUuuid;
 
 #[allow(non_camel_case_types, dead_code)]
-mod dyn_types {
+mod dylib_types {
     use std::ffi::{c_char, c_int, c_uint};
 
     use crate::sys::libcuviddec_sys::{CUdevice, CUresult, CUuuid};
@@ -56,7 +56,7 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
     let mut devices = Vec::new();
 
     let device_count = {
-        let mut count = unsafe { std::mem::zeroed::<c_uint>() };
+        let mut count = 0;
         call_cuda_sym!(sym_cu_device_get_count(&mut count));
 
         count

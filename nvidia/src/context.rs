@@ -15,11 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 use std::panic::{catch_unwind, panic_any, UnwindSafe};
 use std::sync::Mutex;
 
-use dyn_types::*;
+use dylib_types::*;
 
 use crate::device::CudaDevice;
 use crate::dll::{ensure_available, Libs};
@@ -27,7 +28,7 @@ use crate::NvidiaError;
 use crate::sys::libcuviddec_sys::CUcontext;
 
 #[allow(non_camel_case_types, dead_code)]
-mod dyn_types {
+mod dylib_types {
     use std::ffi::c_uint;
 
     use crate::sys::libcuviddec_sys::{CUcontext, CUdevice, CUexecAffinityParam, CUresult};
@@ -40,7 +41,7 @@ mod dyn_types {
 
 #[derive(Debug)]
 pub struct CudaContext<'ctx> {
-    context: Mutex<CUcontext>,
+    context: Mutex<UnsafeCell<CUcontext>>,
     phantom: PhantomData<&'ctx CudaContext<'ctx>>,
 }
 
@@ -56,7 +57,7 @@ impl<'a> Drop for CudaContext<'a> {
             }.expect("cuCtxDestroy_v2 not found in lib_cuda");
 
         let context = self.context.lock().unwrap();
-        unsafe { sym_cu_ctx_destroy_v2(*context); }
+        unsafe { sym_cu_ctx_destroy_v2(*context.get()); }
     }
 }
 
@@ -73,11 +74,16 @@ impl<'a> CudaContext<'a> {
         call_cuda_sym!(sym_cu_ctx_pop_current_v2(&mut cu_context));
 
         Ok(Self {
-            context: Mutex::new(cu_context),
+            context: Mutex::new(UnsafeCell::new(cu_context)),
             phantom: PhantomData::default(),
         })
     }
 
+    /// Executes [f] while making sure the CUDA context is correctly applied to the GPU and cleaned
+    /// up afterward.
+    ///
+    /// If `f` panics, the CUDA context is destroyed to release any resources and the panic
+    /// propagated.
     pub fn with_ctx<F, T>(&self, f: F) -> Result<T, NvidiaError> where F: FnOnce() -> Result<T, NvidiaError> + UnwindSafe {
         let context = self.context.lock().unwrap();
 
@@ -86,7 +92,7 @@ impl<'a> CudaContext<'a> {
         let sym_cu_ctx_push_current_v2 = get_sym!(lib_cuda, cuCtxPushCurrent_v2);
         let sym_cu_ctx_pop_current_v2 = get_sym!(lib_cuda, cuCtxPopCurrent_v2);
 
-        call_cuda_sym!(sym_cu_ctx_push_current_v2(*context));
+        call_cuda_sym!(sym_cu_ctx_push_current_v2(*context.get()));
 
         let f_result =
             match catch_unwind(f) {
@@ -94,21 +100,44 @@ impl<'a> CudaContext<'a> {
                 Err(err) => {
                     // we clean up the context on panic, so we don't leave the GPU in an
                     // unexpected state before propagating the original panic value
-                    let sym_cu_ctx_destroy_v2 = get_sym!(lib_cuda, cuCtxDestroy_v2);
-                    // we don't want to return here, instead we just ignore any error value
-                    // and proceed to the panic
-                    unsafe { sym_cu_ctx_destroy_v2(*context) };
+                    self.destroy(unsafe { *context.get() })?;
 
                     panic_any(err);
                 }
             };
 
-        let mut ctx_ptr = *context;
+        let ctx_ptr = context.get();
         // This won't change the actual context pointer, we just need
         // something to pass to the pop call
-        call_cuda_sym!(sym_cu_ctx_pop_current_v2(&mut ctx_ptr));
+        call_cuda_sym!(sym_cu_ctx_pop_current_v2(ctx_ptr));
 
         return f_result;
+    }
+
+    /// Executes [f] and supplies the CUDA context as a floating context instead of pushing it to
+    /// the GPU directly.
+    ///
+    /// If `f` panics, the CUDA context is destroyed to release any resources and the panic
+    /// propagated.
+    pub fn with_floating_ctx<F, T>(&self, f: F) -> Result<T, NvidiaError> where F: FnOnce(&mut CUcontext) -> Result<T, NvidiaError> + UnwindSafe {
+        let context = self.context.lock().unwrap();
+
+        return match catch_unwind(|| f(unsafe { &mut *context.get() })) {
+            Ok(res) => res,
+            Err(err) => {
+                self.destroy(unsafe { *context.get() })?;
+                panic_any(err);
+            }
+        };
+    }
+
+    fn destroy(&self, ctx: CUcontext) -> Result<(), NvidiaError> {
+        let Libs { lib_cuda, .. } = ensure_available()?;
+
+        let sym_cu_ctx_destroy_v2 = get_sym!(lib_cuda, cuCtxDestroy_v2);
+        unsafe { sym_cu_ctx_destroy_v2(ctx); }
+
+        Ok(())
     }
 }
 

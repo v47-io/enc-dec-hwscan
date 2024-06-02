@@ -14,18 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use thiserror::Error;
+use std::ffi::c_uint;
 
-use crate::sys::libcuviddec_sys::cudaError_enum;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum NvidiaError {
     #[error("Nvidia driver not available: {0}")]
     NotLoaded(#[from] &'static libloading::Error),
     #[error("Operation failed: {0}")]
-    OperationFailed(cudaError_enum),
+    OperationFailed(c_uint),
     #[error("Nvidia driver not available")]
     NotAvailable,
     #[error("Symbol not found in library: {0}")]
     SymbolNotFound(&'static str),
+    #[error("NvEncodeAPI isn't providing function {0}")]
+    NvEncFunctionNotAvailable(&'static str)
 }
