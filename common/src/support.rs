@@ -34,6 +34,7 @@ pub enum Codec {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Chroma {
+    Monochrome = 0,
     Yuv420 = 420,
     Yuv422 = 422,
     Yuv444 = 444,
@@ -48,15 +49,25 @@ pub enum ColorDepth {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum EncodeProfile {
+    Baseline = 1,
+    Main = 10,
+    Main10 = 11,
+    High = 100,
+    High444 = 101,
+}
+
+#[repr(C)]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct CodecSupport {
     codec: Codec,
     resolutions: *mut u32,
-    num_resolutions: usize,
+    num_resolutions: u32,
     chromas: *mut Chroma,
-    num_chromas: usize,
+    num_chromas: u32,
     color_depths: *mut ColorDepth,
-    num_color_depths: usize,
+    num_color_depths: u32,
 }
 
 impl CodecSupport {
@@ -85,9 +96,9 @@ impl CodecSupport {
 impl Drop for CodecSupport {
     fn drop(&mut self) {
         unsafe {
-            drop(Box::from_raw(slice_from_raw_parts_mut(self.resolutions, self.num_resolutions)));
-            drop(Box::from_raw(slice_from_raw_parts_mut(self.chromas, self.num_chromas)));
-            drop(Box::from_raw(slice_from_raw_parts_mut(self.color_depths, self.num_color_depths)));
+            let _ = Box::from_raw(slice_from_raw_parts_mut(self.resolutions, self.num_resolutions as usize));
+            let _ = Box::from_raw(slice_from_raw_parts_mut(self.chromas, self.num_chromas as usize));
+            let _ = Box::from_raw(slice_from_raw_parts_mut(self.color_depths, self.num_color_depths as usize));
         }
     }
 }
@@ -96,7 +107,7 @@ impl Drop for CodecSupport {
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct SupportInfo {
     devices: *mut Device,
-    num_devices: usize,
+    num_devices: u32,
 }
 
 impl SupportInfo {
@@ -113,7 +124,7 @@ impl SupportInfo {
 impl Drop for SupportInfo {
     fn drop(&mut self) {
         unsafe {
-            drop(Box::from_raw(slice_from_raw_parts_mut(self.devices, self.num_devices)));
+            let _ = Box::from_raw(slice_from_raw_parts_mut(self.devices, self.num_devices as usize));
         }
     }
 }
@@ -134,9 +145,9 @@ pub struct Device {
     name: *mut c_char,
     path: *mut c_char,
     decoders: *mut CodecSupport,
-    num_decoders: usize,
+    num_decoders: u32,
     encoders: *mut CodecSupport,
-    num_encoders: usize,
+    num_encoders: u32,
 }
 
 impl Device {
@@ -167,17 +178,17 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
-            drop(CString::from_raw(self.name));
-            drop(Box::from_raw(slice_from_raw_parts_mut(self.decoders, self.num_decoders)));
-            drop(Box::from_raw(slice_from_raw_parts_mut(self.encoders, self.num_encoders)));
+            let _ = CString::from_raw(self.name);
+            let _ = Box::from_raw(slice_from_raw_parts_mut(self.decoders, self.num_decoders as usize));
+            let _ = Box::from_raw(slice_from_raw_parts_mut(self.encoders, self.num_encoders as usize));
         }
     }
 }
 
-fn vec_to_ptr<T>(values: Vec<T>) -> (*mut T, usize) {
+fn vec_to_ptr<T>(values: Vec<T>) -> (*mut T, u32) {
+    let len = values.len();
     let boxed = values.into_boxed_slice();
-    let len = boxed.len();
     let ptr = Box::into_raw(boxed) as *mut _;
 
-    (ptr, len)
+    (ptr, len as u32)
 }

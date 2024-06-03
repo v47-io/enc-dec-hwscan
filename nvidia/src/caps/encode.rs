@@ -16,36 +16,33 @@
  */
 use uuid::Uuid;
 
-use crate::encoder::guid::{AV1_PROFILE_MAIN, CODEC_AV1, CODEC_H264, CODEC_HEVC, H264_PROFILE_BASELINE, H264_PROFILE_HIGH, H264_PROFILE_HIGH_444, H264_PROFILE_MAIN, HEVC_PROFILE_MAIN, HEVC_PROFILE_MAIN10};
+use common::{Codec, EncodeProfile};
+
+use crate::encoder::guid::{
+    AV1_PROFILE_MAIN, CODEC_AV1, CODEC_H264,
+    CODEC_HEVC, H264_PROFILE_BASELINE, H264_PROFILE_HIGH,
+    H264_PROFILE_HIGH_444, H264_PROFILE_MAIN, HEVC_PROFILE_MAIN,
+    HEVC_PROFILE_MAIN10,
+};
 use crate::encoder::NvEncoder;
 use crate::NvidiaError;
-use crate::sys::libnv_encode_api_sys::{_NV_ENC_CAPS_NV_ENC_CAPS_HEIGHT_MAX, _NV_ENC_CAPS_NV_ENC_CAPS_NUM_MAX_BFRAMES, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_10BIT_ENCODE, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_YUV444_ENCODE, _NV_ENC_CAPS_NV_ENC_CAPS_WIDTH_MAX};
+use crate::sys::libnv_encode_api_sys::{
+    _NV_ENC_CAPS_NV_ENC_CAPS_HEIGHT_MAX,
+    _NV_ENC_CAPS_NV_ENC_CAPS_NUM_MAX_BFRAMES,
+    _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_10BIT_ENCODE,
+    _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_YUV444_ENCODE,
+    _NV_ENC_CAPS_NV_ENC_CAPS_WIDTH_MAX,
+};
 
 #[derive(Debug)]
 pub struct NvEncodeCapabilities {
-    pub codec: NvEncodeCodec,
-    pub profiles: Vec<NvEncodeProfile>,
+    pub codec: Codec,
+    pub profiles: Vec<EncodeProfile>,
     pub max_width: usize,
     pub max_height: usize,
     pub ten_bit_encode_supported: bool,
     pub b_frames_supported: bool,
     pub yuv_444_encode_supported: bool,
-}
-
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub enum NvEncodeCodec {
-    H264,
-    HEVC,
-    AV1,
-}
-
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub enum NvEncodeProfile {
-    Baseline,
-    Main,
-    Main10,
-    High,
-    High444,
 }
 
 const IGNORED_PROFILES: [u32; 3] = [0x40847bf5, 0xbfd6f8e7, 0x51ec32b5];
@@ -78,35 +75,35 @@ pub fn get_encode_capabilities(encoder: &NvEncoder) -> Result<Vec<NvEncodeCapabi
     Ok(result)
 }
 
-fn match_codec(uuid: &Uuid) -> Option<NvEncodeCodec> {
+fn match_codec(uuid: &Uuid) -> Option<Codec> {
     return if uuid == &CODEC_H264 {
-        Some(NvEncodeCodec::H264)
+        Some(Codec::H264)
     } else if uuid == &CODEC_HEVC {
-        Some(NvEncodeCodec::HEVC)
+        Some(Codec::Hevc)
     } else if uuid == &CODEC_AV1 {
-        Some(NvEncodeCodec::AV1)
+        Some(Codec::Av1)
     } else {
         eprintln!("Unknown codec GUID: {}", uuid);
         None
     };
 }
 
-fn match_profiles(uuids: &[Uuid]) -> Vec<NvEncodeProfile> {
+fn match_profiles(uuids: &[Uuid]) -> Vec<EncodeProfile> {
     uuids.iter().filter_map(|uuid| {
         if uuid == &H264_PROFILE_BASELINE {
-            Some(NvEncodeProfile::Baseline)
+            Some(EncodeProfile::Baseline)
         } else if uuid == &H264_PROFILE_MAIN {
-            Some(NvEncodeProfile::Main)
+            Some(EncodeProfile::Main)
         } else if uuid == &H264_PROFILE_HIGH {
-            Some(NvEncodeProfile::High)
+            Some(EncodeProfile::High)
         } else if uuid == &H264_PROFILE_HIGH_444 {
-            Some(NvEncodeProfile::High444)
+            Some(EncodeProfile::High444)
         } else if uuid == &HEVC_PROFILE_MAIN {
-            Some(NvEncodeProfile::Main)
+            Some(EncodeProfile::Main)
         } else if uuid == &HEVC_PROFILE_MAIN10 {
-            Some(NvEncodeProfile::Main10)
+            Some(EncodeProfile::Main10)
         } else if uuid == &AV1_PROFILE_MAIN {
-            Some(NvEncodeProfile::Main)
+            Some(EncodeProfile::Main)
         } else {
             let (first_field, ..) = uuid.as_fields();
             if !IGNORED_PROFILES.contains(&first_field) {

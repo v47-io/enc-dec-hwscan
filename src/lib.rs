@@ -15,28 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 use std::panic::catch_unwind;
-use std::ptr::drop_in_place;
 
 pub use common::*;
 
 #[no_mangle]
-pub extern "C" fn drop_support_info(ptr: *mut SupportInfo) {
-    let _ = catch_unwind(|| {
-        unsafe {
-            drop_in_place(ptr);
-        }
-    }).inspect_err(|err| {
-        eprintln!("Critical error in enc_dec_hwscan::drop_support_info: {:?}", err);
-    });
+pub unsafe extern "C" fn drop_support_info(ptr: *mut SupportInfo) {
+    let _ = Box::from_raw(ptr);
 }
 
 #[no_mangle]
-pub extern "C" fn detect_supported_devices(result: *mut SupportInfo) -> i32 {
+pub unsafe extern "C" fn detect_supported_devices(result: *mut *mut SupportInfo) -> i32 {
     catch_unwind(|| {
-        unsafe {
-            *result = SupportInfo::new(vec![]);
-        }
-
+        let support_info = Box::new(SupportInfo::new(vec![]));
+        
+        // make sure this is done last
+        *result = Box::into_raw(support_info);
         0
     }).unwrap_or_else(|err| {
         eprintln!("Critical error in enc_dec_hwscan::detect_support: {:?}", err);

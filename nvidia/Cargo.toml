@@ -8,6 +8,7 @@ authors = ["Alex Katlein <dev@vemilyus.com>"]
 bindgen = "^0.69.4"
 
 [dependencies]
+common = { path = "../common" }
 lazy_static = "^1.4.0"
 libloading = "^0.8.3"
 thiserror = "^1.0.61"

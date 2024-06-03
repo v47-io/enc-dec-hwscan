@@ -30,11 +30,12 @@ rust {
 val setVersionInCargoTomlTask = tasks.setVersionInCargoTomlTask()
 val resetVersionInCargoTomlTask = tasks.resetVersionInCargoTomlTask()
 
+val cleanBuild = tasks.register("cleanBuild", Delete::class) {
+    delete(project.layout.buildDirectory.dir("rust"))
+}
+
 tasks.build {
+    dependsOn(cleanBuild)
     dependsOn(setVersionInCargoTomlTask)
     finalizedBy(resetVersionInCargoTomlTask)
-
-    doFirst {
-        delete(project.layout.buildDirectory.dir("rust"))
-    }
 }
