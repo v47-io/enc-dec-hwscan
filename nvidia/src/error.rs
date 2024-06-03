@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 use std::ffi::c_uint;
+use std::num::TryFromIntError;
 
 use thiserror::Error;
 
@@ -29,5 +30,9 @@ pub enum NvidiaError {
     #[error("Symbol not found in library: {0}")]
     SymbolNotFound(&'static str),
     #[error("NvEncodeAPI isn't providing function {0}")]
-    NvEncFunctionNotAvailable(&'static str)
+    NvEncFunctionNotAvailable(&'static str),
+    #[error("Failed to convert GUID to Uuid: {0}")]
+    FailedToConvertUuid(#[from] uuid::Error),
+    #[error("Failed to convert result value: {0}")]
+    FailedToConvertResult(#[from] TryFromIntError),
 }

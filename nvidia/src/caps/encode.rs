@@ -14,66 +14,142 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+use uuid::Uuid;
+
+use crate::encoder::guid::{AV1_PROFILE_MAIN, CODEC_AV1, CODEC_H264, CODEC_HEVC, H264_PROFILE_BASELINE, H264_PROFILE_HIGH, H264_PROFILE_HIGH_444, H264_PROFILE_MAIN, HEVC_PROFILE_MAIN, HEVC_PROFILE_MAIN10};
 use crate::encoder::NvEncoder;
 use crate::NvidiaError;
+use crate::sys::libnv_encode_api_sys::{_NV_ENC_CAPS_NV_ENC_CAPS_HEIGHT_MAX, _NV_ENC_CAPS_NV_ENC_CAPS_NUM_MAX_BFRAMES, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_10BIT_ENCODE, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_YUV444_ENCODE, _NV_ENC_CAPS_NV_ENC_CAPS_WIDTH_MAX};
 
 #[derive(Debug)]
-pub struct NvEncodeCapabilies {
+pub struct NvEncodeCapabilities {
     pub codec: NvEncodeCodec,
     pub profiles: Vec<NvEncodeProfile>,
     pub max_width: usize,
     pub max_height: usize,
     pub ten_bit_encode_supported: bool,
+    pub b_frames_supported: bool,
+    pub yuv_444_encode_supported: bool,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NvEncodeCodec {
     H264,
     HEVC,
     AV1,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum NvEncodeProfile {
     Baseline,
     Main,
+    Main10,
     High,
+    High444,
 }
 
-pub fn get_encode_capabilities(encoder: &NvEncoder) -> Result<Vec<NvEncodeCapabilies>, NvidiaError> {
-    todo!()
+const IGNORED_PROFILES: [u32; 3] = [0x40847bf5, 0xbfd6f8e7, 0x51ec32b5];
+
+pub fn get_encode_capabilities(encoder: &NvEncoder) -> Result<Vec<NvEncodeCapabilities>, NvidiaError> {
+    let mut result = Vec::new();
+
+    let codec_uuids = encoder.get_encode_guids()?;
+    for codec_uuid in codec_uuids.iter() {
+        let codec =
+            match match_codec(codec_uuid) {
+                Some(c) => c,
+                None => continue
+            };
+
+        let profile_uuids = encoder.get_encode_profile_guids(codec_uuid)?;
+        let profiles = match_profiles(&profile_uuids);
+
+        result.push(NvEncodeCapabilities {
+            codec,
+            profiles,
+            max_width: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_WIDTH_MAX)?.try_into()?,
+            max_height: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_HEIGHT_MAX)?.try_into()?,
+            ten_bit_encode_supported: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_10BIT_ENCODE)? == 1,
+            b_frames_supported: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_NUM_MAX_BFRAMES)? > 0,
+            yuv_444_encode_supported: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)? == 1,
+        })
+    }
+
+    Ok(result)
 }
 
-mod guid {
-    use uuid::Uuid;
+fn match_codec(uuid: &Uuid) -> Option<NvEncodeCodec> {
+    return if uuid == &CODEC_H264 {
+        Some(NvEncodeCodec::H264)
+    } else if uuid == &CODEC_HEVC {
+        Some(NvEncodeCodec::HEVC)
+    } else if uuid == &CODEC_AV1 {
+        Some(NvEncodeCodec::AV1)
+    } else {
+        eprintln!("Unknown codec GUID: {}", uuid);
+        None
+    };
+}
 
-    use crate::sys::libnv_encode_api_sys::GUID;
+fn match_profiles(uuids: &[Uuid]) -> Vec<NvEncodeProfile> {
+    uuids.iter().filter_map(|uuid| {
+        if uuid == &H264_PROFILE_BASELINE {
+            Some(NvEncodeProfile::Baseline)
+        } else if uuid == &H264_PROFILE_MAIN {
+            Some(NvEncodeProfile::Main)
+        } else if uuid == &H264_PROFILE_HIGH {
+            Some(NvEncodeProfile::High)
+        } else if uuid == &H264_PROFILE_HIGH_444 {
+            Some(NvEncodeProfile::High444)
+        } else if uuid == &HEVC_PROFILE_MAIN {
+            Some(NvEncodeProfile::Main)
+        } else if uuid == &HEVC_PROFILE_MAIN10 {
+            Some(NvEncodeProfile::Main10)
+        } else if uuid == &AV1_PROFILE_MAIN {
+            Some(NvEncodeProfile::Main)
+        } else {
+            let (first_field, ..) = uuid.as_fields();
+            if !IGNORED_PROFILES.contains(&first_field) {
+                eprintln!("Unknown profile GUID: {}", uuid);
+            }
 
-    pub const CODEC_H264: Uuid = Uuid::from_bytes([0x6b, 0xc8, 0x27, 0x62, 0x4e, 0x63, 0x4c, 0xa4, 0xaa, 0x85, 0x1e, 0x50, 0xf3, 0x21, 0xf6, 0xbf]);
-    pub const CODEC_HEVC: Uuid = Uuid::from_bytes([0x79, 0x0c, 0xdc, 0x88, 0x45, 0x22, 0x4d, 0x7b, 0x94, 0x25, 0xbd, 0xa9, 0x97, 0x5f, 0x76, 0x03]);
-    pub const CODEC_AV1: Uuid = Uuid::from_bytes([0x0a, 0x35, 0x22, 0x89, 0x0a, 0xa7, 0x47, 0x59, 0x86, 0x2d, 0x5d, 0x15, 0xcd, 0x16, 0xd2, 0x54]);
-
-    pub const H264_PROFILE_BASELINE: Uuid = Uuid::from_bytes([0x07, 0x27, 0xbc, 0xaa, 0x78, 0xc4, 0x4c, 0x83, 0x8c, 0x2f, 0xef, 0x3d, 0xff, 0x26, 0x7c, 0x6a]);
-    pub const H264_PROFILE_MAIN: Uuid = Uuid::from_bytes([0x60, 0xb5, 0xc1, 0xd4, 0x67, 0xfe, 0x47, 0x90, 0x94, 0xd5, 0xc4, 0x72, 0x6d, 0x7b, 0x6e, 0x6d]);
-    pub const H264_PROFILE_HIGH: Uuid = Uuid::from_bytes([0xe7, 0xcb, 0xc3, 0x09, 0x4f, 0x7a, 0x4b, 0x89, 0xaf, 0x2a, 0xd5, 0x37, 0xc9, 0x2b, 0xe3, 0x10]);
-
-    pub const HEVC_PROFILE_MAIN: Uuid = Uuid::from_bytes([0xb5, 0x14, 0xc3, 0x9a, 0xb5, 0x5b, 0x40, 0xfa, 0x87, 0x8f, 0xf1, 0x25, 0x3b, 0x4d, 0xfd, 0xec]);
-    pub const HEVC_PROFILE_MAIN10: Uuid = Uuid::from_bytes([0xfa, 0x4d, 0x2b, 0x6c, 0x3a, 0x5b, 0x41, 0x1a, 0x80, 0x18, 0x0a, 0x3f, 0x5e, 0x3c, 0x9b, 0xe5]);
-
-    pub const AV1_PROFILE_MAIN: Uuid = Uuid::from_bytes([0x5f, 0x2a, 0x39, 0xf5, 0xf1, 0x4e, 0x4f, 0x95, 0x9a, 0x9e, 0xb7, 0x6d, 0x56, 0x8f, 0xcf, 0x97]);
-
-    impl TryInto<Uuid> for GUID {
-        type Error = uuid::Error;
-
-        fn try_into(self) -> Result<Uuid, Self::Error> {
-            let data1_bytes: [u8; 4] = self.Data1.to_be_bytes();
-            let data2_bytes: [u8; 2] = self.Data2.to_be_bytes();
-            let data3_bytes: [u8; 2] = self.Data3.to_be_bytes();
-
-            let full_bytes_vec: Vec<&[u8]> = vec![&data1_bytes, &data2_bytes, &data3_bytes, &self.Data4];
-            let full_bytes: Vec<u8> = full_bytes_vec.concat();
-
-            Uuid::from_slice(&full_bytes)
+            None
         }
+    }).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+    use crate::caps::encode::get_encode_capabilities;
+    use crate::context::CudaContext;
+    use crate::device::enumerate_devices;
+    use crate::dylib::is_cuda_loaded;
+    use crate::encoder::NvEncoder;
+
+    #[test]
+    fn test_get_encode_capabilities() -> Result<(), NvidiaError> {
+        if !is_cuda_loaded() {
+            eprintln!("libcuda.so not available");
+            return Ok(());
+        }
+
+        let devices = enumerate_devices()?;
+        assert!(!devices.is_empty());
+
+        let context = CudaContext::new(devices.get(0).unwrap())?;
+
+        context.with_floating_ctx(|context| {
+            let encoder = NvEncoder::new(context)?;
+
+            let encode_capabilities = get_encode_capabilities(&encoder)?;
+
+            dbg!(&encode_capabilities);
+            assert!(!encode_capabilities.is_empty());
+
+            Ok(())
+        })?;
+
+        Ok(())
     }
 }

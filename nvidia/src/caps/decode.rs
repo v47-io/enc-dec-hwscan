@@ -16,10 +16,11 @@
  */
 
 use std::ffi::c_uint;
+use std::mem::zeroed;
 
 use dylib_types::*;
 
-use crate::dll::{ensure_available, Libs};
+use crate::dylib::{ensure_available, Libs};
 use crate::NvidiaError;
 use crate::sys::libcuviddec_sys::{cudaVideoChromaFormat, cudaVideoCodec, CUVIDDECODECAPS};
 
@@ -44,6 +45,12 @@ pub struct CudaDecodeCapabilities {
     pub max_height: c_uint,
 }
 
+/// Retrieves the decode capabilities for the specified [specs]. The resulting vector only
+/// contains [CudaDecodeCapabilities] instances where decoding is supported, so the number of
+/// results may be lower than the number of specs.
+///
+/// This function requires an applied [crate::context::CudaContext], so make sure to surround any 
+/// call to this function with [crate::context::CudaContext::with_ctx].
 pub fn get_decode_capabilities(specs: Vec<CudaDecodeSpec>) -> Result<Vec<CudaDecodeCapabilities>, NvidiaError> {
     let Libs { lib_cuviddec, .. } = ensure_available()?;
 
@@ -52,7 +59,7 @@ pub fn get_decode_capabilities(specs: Vec<CudaDecodeSpec>) -> Result<Vec<CudaDec
     let mut result = Vec::new();
 
     for spec in specs.into_iter() {
-        let mut cuvid_decode_caps = unsafe { std::mem::zeroed::<CUVIDDECODECAPS>() };
+        let mut cuvid_decode_caps: CUVIDDECODECAPS = unsafe { zeroed() };
         cuvid_decode_caps.eCodecType = spec.codec_type;
         cuvid_decode_caps.eChromaFormat = spec.chroma_format;
         cuvid_decode_caps.nBitDepthMinus8 = (spec.bit_depth - 8).into();
@@ -75,13 +82,13 @@ pub fn get_decode_capabilities(specs: Vec<CudaDecodeSpec>) -> Result<Vec<CudaDec
 mod tests {
     use crate::context::CudaContext;
     use crate::device::enumerate_devices;
-    use crate::dll::is_cuda_loaded;
+    use crate::dylib::is_cuda_loaded;
     use crate::sys::libcuviddec_sys::{cudaVideoChromaFormat_enum_cudaVideoChromaFormat_420, cudaVideoCodec_enum_cudaVideoCodec_H264};
 
     use super::*;
 
     #[test]
-    fn test_get_decoder_capabilities() -> Result<(), NvidiaError> {
+    fn test_get_decode_capabilities() -> Result<(), NvidiaError> {
         if !is_cuda_loaded() {
             eprintln!("libcuda.so is not available");
             return Ok(());

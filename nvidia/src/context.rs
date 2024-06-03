@@ -17,13 +17,14 @@
 
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
+use std::mem::zeroed;
 use std::panic::{catch_unwind, panic_any, UnwindSafe};
 use std::sync::Mutex;
 
 use dylib_types::*;
 
 use crate::device::CudaDevice;
-use crate::dll::{ensure_available, Libs};
+use crate::dylib::{ensure_available, Libs};
 use crate::NvidiaError;
 use crate::sys::libcuviddec_sys::CUcontext;
 
@@ -68,7 +69,7 @@ impl<'a> CudaContext<'a> {
         let sym_cu_ctx_create_v3 = get_sym!(lib_cuda, cuCtxCreate_v3);
         let sym_cu_ctx_pop_current_v2 = get_sym!(lib_cuda, cuCtxPopCurrent_v2);
 
-        let mut cu_context = unsafe { std::mem::zeroed::<CUcontext>() };
+        let mut cu_context: CUcontext = unsafe { zeroed() };
 
         call_cuda_sym!(sym_cu_ctx_create_v3(&mut cu_context, std::ptr::null_mut(), 0, 0, device.handle));
         call_cuda_sym!(sym_cu_ctx_pop_current_v2(&mut cu_context));
@@ -146,7 +147,7 @@ mod tests {
     use std::error::Error;
 
     use crate::device::enumerate_devices;
-    use crate::dll::is_cuda_loaded;
+    use crate::dylib::is_cuda_loaded;
 
     use super::*;
 

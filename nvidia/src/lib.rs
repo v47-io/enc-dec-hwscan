@@ -19,9 +19,8 @@ pub use error::*;
 pub(crate) mod sys;
 pub mod error;
 #[macro_use]
-pub(crate) mod dll;
+pub(crate) mod dylib;
 pub mod device;
 pub mod context;
-#[macro_use]
 pub(crate) mod encoder;
 pub mod caps;

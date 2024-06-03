@@ -15,13 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 use std::ffi::{c_char, CStr};
+use std::mem::zeroed;
 
 use uuid::Uuid;
 
 use dylib_types::*;
 
 use crate::{call_cuda_sym, get_sym};
-use crate::dll::{ensure_available, Libs};
+use crate::dylib::{ensure_available, Libs};
 use crate::NvidiaError;
 pub use crate::sys::libcuviddec_sys::CUdevice;
 use crate::sys::libcuviddec_sys::CUuuid;
@@ -63,7 +64,7 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
     };
 
     for ordinal in 0..device_count {
-        let mut cu_device = unsafe { std::mem::zeroed::<CUdevice>() };
+        let mut cu_device: CUdevice = unsafe { zeroed() };
         call_cuda_sym!(sym_cu_device_get(&mut cu_device, ordinal));
 
         let cu_name_buffer = [0u8; 64];
@@ -77,7 +78,7 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
 
         let cu_name_raw = CStr::from_bytes_until_nul(&cu_name_buffer).unwrap();
 
-        let mut cu_uuid_buffer = unsafe { std::mem::zeroed::<CUuuid>() };
+        let mut cu_uuid_buffer: CUuuid = unsafe { zeroed() };
         call_cuda_sym!(sym_cu_device_get_uuid(&mut cu_uuid_buffer, cu_device));
 
         let uuid = Uuid::from_slice(
@@ -103,7 +104,7 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::dll::is_cuda_loaded;
+    use crate::dylib::is_cuda_loaded;
 
     use super::*;
 
