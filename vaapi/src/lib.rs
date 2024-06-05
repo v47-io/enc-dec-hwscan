@@ -14,7 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-pub use crate::support::*;
+pub use error::*;
 
-mod support;
-
+pub(crate) mod sys;
+pub mod error;
+#[macro_use]
+pub(crate) mod dylib;
+pub mod device;
+pub mod display;

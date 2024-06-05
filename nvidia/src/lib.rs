@@ -17,7 +17,7 @@
 pub use error::*;
 
 pub(crate) mod sys;
-pub mod error;
+pub(crate) mod error;
 #[macro_use]
 pub(crate) mod dylib;
 pub mod device;

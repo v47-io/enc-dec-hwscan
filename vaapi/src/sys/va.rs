@@ -14,7 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-pub use crate::support::*;
+#![allow(non_upper_case_globals)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(improper_ctypes)]
 
-mod support;
-
+include!(concat!(env!("OUT_DIR"), "/va.rs"));

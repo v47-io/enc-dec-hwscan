@@ -1,0 +1,15 @@
+[package]
+name = "vaapi"
+version = "0.0.0-SNAPSHOT"
+edition = "2021"
+authors = ["Alex Katlein <dev@vemilyus.com>"]
+
+[build-dependencies]
+bindgen = "^0.69.4"
+
+[dependencies]
+common = { path = "../common" }
+lazy_static = "^1.4.0"
+libloading = "^0.8.3"
+thiserror = "^1.0.61"
+uuid = "^1.8.0"
