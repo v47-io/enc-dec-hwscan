@@ -96,14 +96,14 @@ impl CodecDetails {
     pub fn combine(codec: Codec, decoding: Option<CodecDetails>, encoding: Option<CodecDetails>) -> Self {
         let (decoding_specs, num_decoding_specs) =
             if let Some(decoding) = decoding {
-                decoding.into_raw_decoding_specs()
+                unsafe { decoding.into_raw_decoding_specs() }
             } else {
                 (ptr::null_mut(), 0)
             };
 
         let (encoding_specs, num_encoding_specs) =
             if let Some(encoding) = encoding {
-                encoding.into_raw_encoding_specs()
+                unsafe { encoding.into_raw_encoding_specs() }
             } else {
                 (ptr::null_mut(), 0)
             };
@@ -121,14 +121,14 @@ impl CodecDetails {
         self.codec
     }
 
-    pub fn into_raw_decoding_specs(self) -> (*mut DecodingSpec, u32) {
+    pub unsafe fn into_raw_decoding_specs(self) -> (*mut DecodingSpec, u32) {
         let Self { decoding_specs, num_decoding_specs, .. } = self;
         mem::forget(self);
 
         (decoding_specs, num_decoding_specs)
     }
 
-    pub fn into_raw_encoding_specs(self) -> (*mut EncodingSpec, u32) {
+    pub unsafe fn into_raw_encoding_specs(self) -> (*mut EncodingSpec, u32) {
         let Self { encoding_specs, num_encoding_specs, .. } = self;
         mem::forget(self);
 
