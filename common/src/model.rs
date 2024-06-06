@@ -64,7 +64,9 @@ pub enum EncodeProfile {
     Main = 10,
     Main10 = 11,
     High = 100,
-    High444 = 101,
+    High10 = 110,
+    High12 = 112,
+    High444 = 140,
 }
 
 #[repr(C)]

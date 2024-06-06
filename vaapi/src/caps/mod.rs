@@ -82,7 +82,7 @@ pub fn get_capabilities(display: &DrmDisplay) -> Result<Vec<CodecDetails>, VaErr
                 encode_caps.entry(profile_specs.0).or_default().push(EncodingSpec {
                     chroma: profile_specs.2,
                     color_depth: profile_specs.3,
-                    profile: profile_specs.1.unwrap(),
+                    profile: profile_specs.1,
                     max_width,
                     max_height,
                     b_frames_supported: ThreeValue::Unknown,
@@ -111,73 +111,73 @@ pub fn get_capabilities(display: &DrmDisplay) -> Result<Vec<CodecDetails>, VaErr
     )
 }
 
-fn map_profile(profile: VAProfile) -> Vec<(Codec, Option<EncodeProfile>, Chroma, ColorDepth)> {
+fn map_profile(profile: VAProfile) -> Vec<(Codec, EncodeProfile, Chroma, ColorDepth)> {
     if profile == VAProfile_VAProfileMPEG2Main {
-        vec![(Codec::Mpeg2, None, Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::Mpeg2, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileMPEG4Main {
-        vec![(Codec::Mpeg4, None, Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::Mpeg4, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileH264Baseline {
-        vec![(Codec::H264, Some(EncodeProfile::Baseline), Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::H264, EncodeProfile::Baseline, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileH264Main {
-        vec![(Codec::H264, Some(EncodeProfile::Main), Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::H264, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileH264High {
-        vec![(Codec::H264, Some(EncodeProfile::High), Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::H264, EncodeProfile::High, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileVC1Main {
-        vec![(Codec::Vc1, None, Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::Vc1, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileVP8Version0_3 {
-        vec![(Codec::Vp8, None, Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::Vp8, EncodeProfile::Baseline, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileHEVCMain {
-        vec![(Codec::Hevc, Some(EncodeProfile::Main), Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::Hevc, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileHEVCMain10 {
-        vec![(Codec::Hevc, Some(EncodeProfile::Main10), Chroma::Yuv420, ColorDepth::Bit10)]
+        vec![(Codec::Hevc, EncodeProfile::Main10, Chroma::Yuv420, ColorDepth::Bit10)]
     } else if profile == VAProfile_VAProfileVP9Profile0 {
-        vec![(Codec::Vp9, None, Chroma::Yuv420, ColorDepth::Bit8)]
+        vec![(Codec::Vp9, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileVP9Profile1 {
         vec![
-            (Codec::Vp9, None, Chroma::Yuv420, ColorDepth::Bit8),
-            (Codec::Vp9, None, Chroma::Yuv422, ColorDepth::Bit8),
-            (Codec::Vp9, None, Chroma::Yuv444, ColorDepth::Bit8),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit8),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv422, ColorDepth::Bit8),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv444, ColorDepth::Bit8),
         ]
     } else if profile == VAProfile_VAProfileVP9Profile2 {
         vec![
-            (Codec::Vp9, None, Chroma::Yuv420, ColorDepth::Bit10),
-            (Codec::Vp9, None, Chroma::Yuv420, ColorDepth::Bit12),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit10),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit12),
         ]
     } else if profile == VAProfile_VAProfileVP9Profile3 {
         vec![
-            (Codec::Vp9, None, Chroma::Yuv420, ColorDepth::Bit10),
-            (Codec::Vp9, None, Chroma::Yuv420, ColorDepth::Bit12),
-            (Codec::Vp9, None, Chroma::Yuv422, ColorDepth::Bit10),
-            (Codec::Vp9, None, Chroma::Yuv422, ColorDepth::Bit12),
-            (Codec::Vp9, None, Chroma::Yuv444, ColorDepth::Bit10),
-            (Codec::Vp9, None, Chroma::Yuv444, ColorDepth::Bit12),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit10),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit12),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv422, ColorDepth::Bit10),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv422, ColorDepth::Bit12),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv444, ColorDepth::Bit10),
+            (Codec::Vp9, EncodeProfile::Main, Chroma::Yuv444, ColorDepth::Bit12),
         ]
     } else if profile == VAProfile_VAProfileHEVCMain12 {
-        vec![(Codec::Hevc, None, Chroma::Yuv420, ColorDepth::Bit12)]
+        vec![(Codec::Hevc, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit12)]
     } else if profile == VAProfile_VAProfileHEVCMain422_10 {
-        vec![(Codec::Hevc, None, Chroma::Yuv422, ColorDepth::Bit10)]
+        vec![(Codec::Hevc, EncodeProfile::Main10, Chroma::Yuv422, ColorDepth::Bit10)]
     } else if profile == VAProfile_VAProfileHEVCMain422_12 {
-        vec![(Codec::Hevc, None, Chroma::Yuv422, ColorDepth::Bit12)]
+        vec![(Codec::Hevc, EncodeProfile::Main, Chroma::Yuv422, ColorDepth::Bit12)]
     } else if profile == VAProfile_VAProfileHEVCMain444 {
-        vec![(Codec::Hevc, Some(EncodeProfile::Main), Chroma::Yuv444, ColorDepth::Bit8)]
+        vec![(Codec::Hevc, EncodeProfile::Main, Chroma::Yuv444, ColorDepth::Bit8)]
     } else if profile == VAProfile_VAProfileHEVCMain444_10 {
-        vec![(Codec::Hevc, Some(EncodeProfile::Main10), Chroma::Yuv444, ColorDepth::Bit10)]
+        vec![(Codec::Hevc, EncodeProfile::Main10, Chroma::Yuv444, ColorDepth::Bit10)]
     } else if profile == VAProfile_VAProfileHEVCMain444_12 {
-        vec![(Codec::Hevc, None, Chroma::Yuv444, ColorDepth::Bit12)]
+        vec![(Codec::Hevc, EncodeProfile::Main, Chroma::Yuv444, ColorDepth::Bit12)]
     } else if profile == VAProfile_VAProfileAV1Profile0 {
         vec![
-            (Codec::Av1, Some(EncodeProfile::Main), Chroma::Yuv420, ColorDepth::Bit8),
-            (Codec::Av1, Some(EncodeProfile::Main), Chroma::Yuv420, ColorDepth::Bit10),
+            (Codec::Av1, EncodeProfile::Main, Chroma::Yuv420, ColorDepth::Bit8),
+            (Codec::Av1, EncodeProfile::Main10, Chroma::Yuv420, ColorDepth::Bit10),
         ]
     } else if profile == VAProfile_VAProfileAV1Profile1 {
         vec![
-            (Codec::Av1, Some(EncodeProfile::High), Chroma::Yuv420, ColorDepth::Bit8),
-            (Codec::Av1, Some(EncodeProfile::High), Chroma::Yuv420, ColorDepth::Bit10),
-            (Codec::Av1, Some(EncodeProfile::High), Chroma::Yuv444, ColorDepth::Bit8),
-            (Codec::Av1, Some(EncodeProfile::High), Chroma::Yuv444, ColorDepth::Bit10),
+            (Codec::Av1, EncodeProfile::High, Chroma::Yuv420, ColorDepth::Bit8),
+            (Codec::Av1, EncodeProfile::High10, Chroma::Yuv420, ColorDepth::Bit10),
+            (Codec::Av1, EncodeProfile::High, Chroma::Yuv444, ColorDepth::Bit8),
+            (Codec::Av1, EncodeProfile::High10, Chroma::Yuv444, ColorDepth::Bit10),
         ]
     } else if profile == VAProfile_VAProfileH264High10 {
-        vec![(Codec::H264, None, Chroma::Yuv420, ColorDepth::Bit10)]
+        vec![(Codec::H264, EncodeProfile::High10, Chroma::Yuv420, ColorDepth::Bit10)]
     } else {
         vec![]
     }
