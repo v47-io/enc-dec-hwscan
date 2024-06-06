@@ -14,23 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::ffi::c_uint;
-use std::num::TryFromIntError;
-
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum NvidiaError {
-    #[error("Nvidia driver not available: {0}")]
-    NotLoaded(#[from] &'static libloading::Error),
-    #[error("Operation failed: {0}")]
-    OperationFailed(c_uint),
-    #[error("Symbol not found in library: {0}")]
-    SymbolNotFound(&'static str),
-    #[error("NvEncodeAPI isn't providing function {0}")]
-    NvEncFunctionNotAvailable(&'static str),
-    #[error("Failed to convert GUID to Uuid: {0}")]
-    FailedToConvertUuid(#[from] uuid::Error),
-    #[error("Failed to convert result value: {0}")]
-    FailedToConvertResult(#[from] TryFromIntError),
+#[repr(i32)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ErrorCode {
+    CriticalError = -666,
+    Success = 0,
+    DriverFailure = 1,
+    OperationFailed = 2,
+    ConversionFailed = 3
 }

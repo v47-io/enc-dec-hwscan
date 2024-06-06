@@ -14,10 +14,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-pub fn vec_to_ptr<T>(values: Vec<T>) -> (*mut T, u32) {
+use std::{mem, ptr};
+
+pub fn vec_to_ptr<T>(mut values: Vec<T>) -> (*mut T, u32) {
+    if values.is_empty() {
+        return (ptr::null_mut(), 0);
+    }
+
+    values.shrink_to_fit();
+
     let len = values.len();
-    let boxed = values.into_boxed_slice();
-    let ptr = Box::into_raw(boxed) as *mut _;
+    let ptr = values.as_mut_ptr();
+
+    mem::forget(values);
 
     (ptr, len as u32)
+}
+
+pub fn drop_vec<T>(ptr: *mut T, len: u32) {
+    unsafe {
+        let _ = Vec::from_raw_parts(ptr, len as usize, len as usize);
+    }
 }

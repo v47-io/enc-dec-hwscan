@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+use std::{mem, ptr};
 use std::ffi::{c_char, CString};
-use std::ptr;
 
-use crate::utils::vec_to_ptr;
+use crate::utils::{drop_vec, vec_to_ptr};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -96,14 +96,14 @@ impl CodecDetails {
     pub fn combine(codec: Codec, decoding: Option<CodecDetails>, encoding: Option<CodecDetails>) -> Self {
         let (decoding_specs, num_decoding_specs) =
             if let Some(decoding) = decoding {
-                (decoding.decoding_specs, decoding.num_decoding_specs)
+                decoding.into_raw_decoding_specs()
             } else {
                 (ptr::null_mut(), 0)
             };
 
         let (encoding_specs, num_encoding_specs) =
             if let Some(encoding) = encoding {
-                (encoding.encoding_specs, encoding.num_encoding_specs)
+                encoding.into_raw_encoding_specs()
             } else {
                 (ptr::null_mut(), 0)
             };
@@ -116,16 +116,34 @@ impl CodecDetails {
             num_encoding_specs,
         }
     }
+
+    pub fn codec(&self) -> Codec {
+        self.codec
+    }
+
+    pub fn into_raw_decoding_specs(self) -> (*mut DecodingSpec, u32) {
+        let Self { decoding_specs, num_decoding_specs, .. } = self;
+        mem::forget(self);
+
+        (decoding_specs, num_decoding_specs)
+    }
+
+    pub fn into_raw_encoding_specs(self) -> (*mut EncodingSpec, u32) {
+        let Self { encoding_specs, num_encoding_specs, .. } = self;
+        mem::forget(self);
+
+        (encoding_specs, num_encoding_specs)
+    }
 }
 
 impl Drop for CodecDetails {
     fn drop(&mut self) {
-        unsafe {
-            let num_decoding_specs = self.num_decoding_specs as usize;
-            let num_encoding_specs = self.num_encoding_specs as usize;
+        if self.num_decoding_specs > 0 {
+            drop_vec(self.decoding_specs, self.num_decoding_specs);
+        }
 
-            let _ = Vec::from_raw_parts(self.decoding_specs, num_decoding_specs, num_decoding_specs);
-            let _ = Vec::from_raw_parts(self.encoding_specs, num_encoding_specs, num_encoding_specs);
+        if self.num_encoding_specs > 0 {
+            drop_vec(self.encoding_specs, self.num_encoding_specs);
         }
     }
 }
@@ -220,21 +238,22 @@ impl Drop for Device {
             if self.name != ptr::null_mut() {
                 let _ = CString::from_raw(self.name as *mut c_char);
             }
+        }
 
-            let num_codecs = self.num_codecs as usize;
-            let _ = Vec::from_raw_parts(self.codecs, num_codecs, num_codecs);
+        if self.num_codecs > 0 {
+            drop_vec(self.codecs, self.num_codecs);
         }
     }
 }
 
 #[repr(C)]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Devices {
+pub struct EncDecDevices {
     devices: *mut Device,
     num_devices: u32,
 }
 
-impl Devices {
+impl EncDecDevices {
     pub fn new(devices: Vec<Device>) -> Self {
         let (devices, num_devices) = vec_to_ptr(devices);
 
@@ -245,11 +264,10 @@ impl Devices {
     }
 }
 
-impl Drop for Devices {
+impl Drop for EncDecDevices {
     fn drop(&mut self) {
-        unsafe {
-            let num_devices = self.num_devices as usize;
-            let _ = Vec::from_raw_parts(self.devices, num_devices, num_devices);
+        if self.num_devices > 0 {
+            drop_vec(self.devices, self.num_devices);
         }
     }
 }
