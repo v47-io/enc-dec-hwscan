@@ -21,7 +21,7 @@ use libloading::{Error, Library};
 
 use dylib_types::*;
 
-use crate::error::NvidiaError;
+use crate::NvidiaError;
 use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
 
 #[allow(non_camel_case_types, dead_code)]
@@ -103,7 +103,7 @@ pub fn cuda_init() -> Result<(), NvidiaError> {
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! call_cuda_sym {
     ($call: expr) => {{
-        use crate::error::NvidiaError;
+        use crate::NvidiaError;
 
         use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
 
@@ -118,7 +118,7 @@ macro_rules! call_cuda_sym {
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! get_sym {
     ($lib_var:expr, $sym_name:ident) => {{
-        use crate::error::NvidiaError;
+        use crate::NvidiaError;
         
         unsafe {
             match $lib_var.get::<$sym_name>(stringify!($sym_name).as_bytes()) {

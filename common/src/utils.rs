@@ -14,12 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-pub use error::*;
+pub fn vec_to_ptr<T>(values: Vec<T>) -> (*mut T, u32) {
+    let len = values.len();
+    let boxed = values.into_boxed_slice();
+    let ptr = Box::into_raw(boxed) as *mut _;
 
-pub(crate) mod sys;
-mod error;
-#[macro_use]
-pub(crate) mod dylib;
-pub mod device;
-pub mod display;
-pub mod caps;
+    (ptr, len as u32)
+}

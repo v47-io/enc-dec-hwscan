@@ -15,10 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::ffi::c_uint;
+use std::collections::HashMap;
 use std::mem::zeroed;
 
-use common::{Chroma, Codec, ColorDepth};
+use common::{Chroma, Codec, CodecDetails, ColorDepth, DecodingSpec};
 use dylib_types::*;
 
 use crate::dylib::{ensure_available, Libs};
@@ -38,7 +38,7 @@ use crate::sys::libcuviddec_sys::{
     cudaVideoCodec_enum_cudaVideoCodec_VC1,
     cudaVideoCodec_enum_cudaVideoCodec_VP8,
     cudaVideoCodec_enum_cudaVideoCodec_VP9,
-    CUVIDDECODECAPS
+    CUVIDDECODECAPS,
 };
 
 #[allow(non_camel_case_types, dead_code)]
@@ -92,27 +92,14 @@ impl CudaDecodeSpec {
     }
 }
 
-#[derive(Debug)]
-pub struct CudaDecodeCapabilities {
-    pub codec: Codec,
-    pub chroma: Chroma,
-    pub color_depth: ColorDepth,
-    pub max_width: c_uint,
-    pub max_height: c_uint,
-}
-
-/// Retrieves the decode capabilities for the specified [specs]. The resulting vector only
-/// contains [CudaDecodeCapabilities] instances where decoding is supported, so the number of
-/// results may be lower than the number of specs.
-///
 /// This function requires an applied [crate::context::CudaContext], so make sure to surround any
 /// call to this function with [crate::context::CudaContext::with_ctx].
-pub fn get_decode_capabilities(specs: &[CudaDecodeSpec]) -> Result<Vec<CudaDecodeCapabilities>, NvidiaError> {
+pub fn get_decode_capabilities(specs: &[CudaDecodeSpec]) -> Result<Vec<CodecDetails>, NvidiaError> {
     let Libs { lib_cuviddec, .. } = ensure_available()?;
 
     let sym_cuvid_get_decoder_caps = get_sym!(lib_cuviddec, cuvidGetDecoderCaps);
 
-    let mut result = Vec::new();
+    let mut result: HashMap<Codec, Vec<DecodingSpec>> = HashMap::new();
 
     for spec in specs.into_iter() {
         let mut cuvid_decode_caps: CUVIDDECODECAPS = unsafe { zeroed() };
@@ -123,17 +110,25 @@ pub fn get_decode_capabilities(specs: &[CudaDecodeSpec]) -> Result<Vec<CudaDecod
         call_cuda_sym!(sym_cuvid_get_decoder_caps(&mut cuvid_decode_caps));
 
         if cuvid_decode_caps.bIsSupported != 0 {
-            result.push(CudaDecodeCapabilities {
-                codec: map_codec_type(spec.codec_type),
-                chroma: map_chroma_format(spec.chroma_format),
-                color_depth: map_bit_depth(spec.bit_depth),
-                max_width: cuvid_decode_caps.nMaxWidth,
-                max_height: cuvid_decode_caps.nMaxHeight,
-            })
+            result
+                .entry(map_codec_type(spec.codec_type)).or_default()
+                .push(DecodingSpec {
+                    chroma: map_chroma_format(spec.chroma_format),
+                    color_depth: map_bit_depth(spec.bit_depth),
+                    max_width: cuvid_decode_caps.nMaxWidth,
+                    max_height: cuvid_decode_caps.nMaxHeight,
+                });
         }
     }
 
-    Ok(result)
+    Ok(
+        result
+            .into_iter()
+            .map(|(codec, specs)| {
+                CodecDetails::new(codec, specs, vec![])
+            })
+            .collect()
+    )
 }
 
 fn map_codec_type(cuda_video_codec: cudaVideoCodec) -> Codec {

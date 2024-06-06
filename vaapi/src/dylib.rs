@@ -17,7 +17,7 @@
 use lazy_static::lazy_static;
 use libloading::{Error, Library};
 
-use crate::error::VaError;
+use crate::VaError;
 
 lazy_static! {
     static ref _LIBVA_RAW: Result<Library, Error> = unsafe {
@@ -59,7 +59,7 @@ pub fn ensure_available() -> Result<Libs, VaError> {
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! get_sym {
     ($lib_var:expr, $sym_name:ident) => {{
-        use crate::error::VaError;
+        use crate::VaError;
 
         unsafe {
             match $lib_var.get::<$sym_name>(stringify!($sym_name).as_bytes()) {
@@ -74,7 +74,7 @@ macro_rules! get_sym {
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! varesult_call_sym {
     ($call: expr) => {{
-        use crate::error::VaError;
+        use crate::VaError;
 
         use crate::sys::va::VA_STATUS_SUCCESS;
 
@@ -84,7 +84,7 @@ macro_rules! varesult_call_sym {
         }
     }};
     ($self: expr, $func: ident ($($arg: expr),*)) => {{
-        use crate::error::VaError;
+        use crate::VaError;
 
         use crate::sys::va::VA_STATUS_SUCCESS;
 

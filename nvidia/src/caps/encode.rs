@@ -14,9 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+use std::collections::HashMap;
+
 use uuid::Uuid;
 
-use common::{Codec, EncodeProfile};
+use common::{Chroma, Codec, CodecDetails, ColorDepth, EncodeProfile, EncodingSpec};
+use common::Chroma::Yuv444;
 
 use crate::encoder::guid::{
     AV1_PROFILE_MAIN, CODEC_AV1, CODEC_H264,
@@ -34,21 +37,8 @@ use crate::sys::libnv_encode_api_sys::{
     _NV_ENC_CAPS_NV_ENC_CAPS_WIDTH_MAX,
 };
 
-#[derive(Debug)]
-pub struct NvEncodeCapabilities {
-    pub codec: Codec,
-    pub profiles: Vec<EncodeProfile>,
-    pub max_width: usize,
-    pub max_height: usize,
-    pub ten_bit_encode_supported: bool,
-    pub b_frames_supported: bool,
-    pub yuv_444_encode_supported: bool,
-}
-
-const IGNORED_PROFILES: [u32; 3] = [0x40847bf5, 0xbfd6f8e7, 0x51ec32b5];
-
-pub fn get_encode_capabilities(encoder: &NvEncoder) -> Result<Vec<NvEncodeCapabilities>, NvidiaError> {
-    let mut result = Vec::new();
+pub fn get_encode_capabilities(encoder: &NvEncoder) -> Result<Vec<CodecDetails>, NvidiaError> {
+    let mut result: HashMap<Codec, Vec<EncodingSpec>> = HashMap::new();
 
     let codec_uuids = encoder.get_encode_guids()?;
     for codec_uuid in codec_uuids.iter() {
@@ -61,18 +51,46 @@ pub fn get_encode_capabilities(encoder: &NvEncoder) -> Result<Vec<NvEncodeCapabi
         let profile_uuids = encoder.get_encode_profile_guids(codec_uuid)?;
         let profiles = match_profiles(&profile_uuids);
 
-        result.push(NvEncodeCapabilities {
-            codec,
-            profiles,
-            max_width: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_WIDTH_MAX)?.try_into()?,
-            max_height: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_HEIGHT_MAX)?.try_into()?,
-            ten_bit_encode_supported: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_10BIT_ENCODE)? == 1,
-            b_frames_supported: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_NUM_MAX_BFRAMES)? > 0,
-            yuv_444_encode_supported: encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)? == 1,
-        })
+        let max_width = encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_WIDTH_MAX)?.try_into()?;
+        let max_height = encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_HEIGHT_MAX)?.try_into()?;
+        let ten_bit_encode_supported = encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_10BIT_ENCODE)? == 1;
+        let b_frames_supported = encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_NUM_MAX_BFRAMES)? > 0;
+        let yuv_444_encode_supported = encoder.get_encode_caps(codec_uuid, _NV_ENC_CAPS_NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)? == 1;
+
+        profiles.into_iter().for_each(|profile| {
+            let base_encoding_spec = EncodingSpec {
+                chroma: Chroma::Yuv420,
+                color_depth: ColorDepth::Bit8,
+                profile,
+                max_width,
+                max_height,
+                b_frames_supported: b_frames_supported.into(),
+            };
+
+            result.entry(codec).or_default().push(base_encoding_spec);
+
+            if ten_bit_encode_supported && !yuv_444_encode_supported {
+                result.entry(codec).or_default().push(EncodingSpec { color_depth: ColorDepth::Bit10, ..base_encoding_spec });
+            } else if yuv_444_encode_supported && !ten_bit_encode_supported {
+                result.entry(codec).or_default().push(EncodingSpec { chroma: Yuv444, ..base_encoding_spec });
+            } else if ten_bit_encode_supported && yuv_444_encode_supported {
+                result.entry(codec).or_default().push(EncodingSpec {
+                    chroma: Yuv444,
+                    color_depth: ColorDepth::Bit10,
+                    ..base_encoding_spec
+                });
+            }
+        });
     }
 
-    Ok(result)
+    Ok(
+        result
+            .into_iter()
+            .map(|(codec, specs)| {
+                CodecDetails::new(codec, vec![], specs)
+            })
+            .collect()
+    )
 }
 
 fn match_codec(uuid: &Uuid) -> Option<Codec> {
@@ -88,7 +106,10 @@ fn match_codec(uuid: &Uuid) -> Option<Codec> {
     };
 }
 
+
 fn match_profiles(uuids: &[Uuid]) -> Vec<EncodeProfile> {
+    static IGNORED_PROFILES: [u32; 3] = [0x40847bf5, 0xbfd6f8e7, 0x51ec32b5];
+
     uuids.iter().filter_map(|uuid| {
         if uuid == &H264_PROFILE_BASELINE {
             Some(EncodeProfile::Baseline)

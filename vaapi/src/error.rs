@@ -47,10 +47,8 @@ pub enum VaError {
     FailedToOpenDevice(PathBuf, std::io::Error),
     #[error("Failed to get display for device at {0}")]
     FailedToGetDisplay(PathBuf),
-    #[error("Operation failed: {0}")]
-    OperationFailed(VAStatus),
     #[error("Operation failed: {0} ({1})")]
-    OperationFailedT(String, VAStatus),
+    OperationFailed(String, VAStatus),
 }
 
 impl VaError {
@@ -66,10 +64,10 @@ impl VaError {
         };
 
         if result_ptr == ptr::null() {
-            Ok(VaError::OperationFailed(status))
+            Ok(VaError::OperationFailed("unknown error".to_string(), status))
         } else {
             let msg = unsafe { CStr::from_ptr(result_ptr) };
-            Ok(VaError::OperationFailedT(msg.to_string_lossy().to_string(), status))
+            Ok(VaError::OperationFailed(msg.to_string_lossy().to_string(), status))
         }
     }
 }

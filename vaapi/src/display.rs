@@ -26,8 +26,8 @@ use libloading::Symbol;
 use dylib_types::*;
 
 use crate::dylib::{ensure_available, Libs};
-use crate::error::VaError;
 use crate::sys::va::{VA_ATTRIB_NOT_SUPPORTED, VAConfigAttrib, VADisplay, VAEntrypoint, VAProfile};
+use crate::VaError;
 
 #[allow(non_camel_case_types, dead_code)]
 mod dylib_types {
@@ -148,7 +148,7 @@ impl DrmDisplay {
     pub fn query_profiles(&self) -> Result<Vec<VAProfile>, VaError> {
         let max_num_profiles = call_sym!(self, va_max_num_profiles());
         if max_num_profiles < 0 {
-            return Err(VaError::OperationFailedT("vaMaxNumProfiles returned a negative value".to_string(), -1));
+            return Err(VaError::OperationFailed("vaMaxNumProfiles returned a negative value".to_string(), -1));
         }
 
         let max_num_profiles = max_num_profiles as usize;
@@ -165,7 +165,7 @@ impl DrmDisplay {
     pub fn query_entrypoints(&self, profile: VAProfile) -> Result<Vec<VAEntrypoint>, VaError> {
         let max_num_entrypoints = call_sym!(self, va_max_num_entrypoints());
         if max_num_entrypoints < 0 {
-            return Err(VaError::OperationFailedT("vaMaxNumEntrypoints returned a negative value".to_string(), -1));
+            return Err(VaError::OperationFailed("vaMaxNumEntrypoints returned a negative value".to_string(), -1));
         }
 
         let max_num_entrypoints = max_num_entrypoints as usize;

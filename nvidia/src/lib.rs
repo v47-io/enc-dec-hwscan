@@ -17,10 +17,10 @@
 pub use error::*;
 
 pub(crate) mod sys;
-pub(crate) mod error;
+mod error;
 #[macro_use]
 pub(crate) mod dylib;
 pub mod device;
 pub mod context;
-pub(crate) mod encoder;
+pub mod encoder;
 pub mod caps;

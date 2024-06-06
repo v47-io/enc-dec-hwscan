@@ -17,7 +17,7 @@
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 
-use crate::error::VaError;
+use crate::VaError;
 
 const DEV_PATH: &'static str = "/dev/dri";
 const DEV_BY_PATH_PATH: &'static str = "/dev/dri/by-path";

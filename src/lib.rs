@@ -19,20 +19,40 @@ use std::panic::catch_unwind;
 pub use common::*;
 
 #[no_mangle]
-pub unsafe extern "C" fn drop_support_info(ptr: *mut SupportInfo) {
+pub unsafe extern "C" fn drop_devices(ptr: *mut Devices) {
     let _ = Box::from_raw(ptr);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn detect_supported_devices(result: *mut *mut SupportInfo) -> i32 {
+pub unsafe extern "C" fn detect_devices(result: *mut *mut Devices) -> i32 {
     catch_unwind(|| {
-        let support_info = Box::new(SupportInfo::new(vec![]));
-        
-        // make sure this is done last
-        *result = Box::into_raw(support_info);
+        let devices = Box::new(Devices::new(vec![]));
+
+        // make sure this is done last and only if errno is going to be 0
+        *result = Box::into_raw(devices);
         0
     }).unwrap_or_else(|err| {
-        eprintln!("Critical error in enc_dec_hwscan::detect_support: {:?}", err);
+        eprintln!("Critical error in enc_dec_hwscan::detect_devices: {:?}", err);
         -666
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ptr;
+
+    use super::*;
+
+    #[test]
+    fn test_detect_devices() {
+        unsafe {
+            let mut target = ptr::null_mut::<Devices>();
+
+            assert_eq!(0, detect_devices(&mut target));
+
+            dbg!(&*target);
+
+            drop_devices(target);
+        }
+    }
 }

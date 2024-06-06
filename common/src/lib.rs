@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-pub use crate::support::*;
+pub use crate::model::*;
 
-mod support;
-
+mod model;
+mod utils;

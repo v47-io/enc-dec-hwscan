@@ -89,7 +89,7 @@ impl<'a> Drop for NvEncoder<'a> {
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! call_encoder_fn {
     ($encoder: expr, $func: ident ($($arg: expr),*)) => {{
-        use crate::error::NvidiaError;
+        use crate::NvidiaError;
         use crate::sys::libnv_encode_api_sys::_NVENCSTATUS_NV_ENC_SUCCESS;
 
         match $encoder.encode_api.$func {
