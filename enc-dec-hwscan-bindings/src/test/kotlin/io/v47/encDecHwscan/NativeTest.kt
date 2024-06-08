@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (C) 2024 Media Server 47 Authors
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,23 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-extern crate cbindgen;
+package io.v47.encDecHwscan
 
-use std::env;
-use cbindgen::Language;
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertDoesNotThrow
 
-fn main() {
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class NativeTest {
+    @BeforeAll
+    fun init() {
+        Native.load()
+    }
 
-    cbindgen::Builder::new()
-        .with_crate(crate_dir)
-        .with_parse_deps(true)
-        .with_parse_include(&["common"])
-        .with_language(Language::C)
-        .with_cpp_compat(true)
-        .with_no_includes()
-        .with_sys_include("stdint.h")
-        .generate()
-        .expect("Unable to generate C headers")
-        .write_to_file("target/enc-dec-hwscan.h");
+    @Test
+    fun `it should call the native library`() {
+        assertDoesNotThrow {
+            Native.scanDevices { _ -> }
+        }
+    }
 }
