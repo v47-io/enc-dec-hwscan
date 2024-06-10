@@ -6,7 +6,7 @@ plugins {
 }
 
 dependencies {
-    rust(project(":libs:enc-dec-hwscan:enc-dec-hwscan-native"))
+    rust(project("${parent!!.path}:enc-dec-hwscan-native"))
 
     implementation(Catalog.Yanl)
     implementation(Catalog.Quarkus.Core)
@@ -15,9 +15,9 @@ dependencies {
 }
 
 tasks.jextract {
-    dependsOn(":libs:enc-dec-hwscan:enc-dec-hwscan-native:build")
+    dependsOn("${parent!!.path}:enc-dec-hwscan-native:build")
 
-    header("${project(":libs:enc-dec-hwscan:enc-dec-hwscan-native").projectDir}/target/enc-dec-hwscan.h") {
+    header("${project("${parent!!.path}:enc-dec-hwscan-native").projectDir}/target/enc-dec-hwscan.h") {
         targetPackage.set("io.v47.encDecHwscan.bindings")
         className.set("EncDecHwscan")
     }

@@ -65,10 +65,8 @@ pub unsafe extern "C" fn scan_devices(result: *mut *mut EncDecDevices) -> ErrorC
                 .chain(vaapi_devices.into_iter())
                 .collect();
 
-        let devices = Box::new(EncDecDevices::new(all_devices));
-
         // make sure this is done last and only if errno is going to be 0
-        *result = Box::into_raw(devices);
+        *result = Box::into_raw(Box::new(EncDecDevices::new(all_devices)));
         ErrorCode::Success
     }).unwrap_or_else(|err| {
         eprintln!("Critical error in enc_dec_hwscan::detect_devices: {:?}", err);

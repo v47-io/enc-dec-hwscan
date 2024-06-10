@@ -1,5 +1,5 @@
 plugins {
-    library
+    kotlin
 }
 
 dependencies {
