@@ -33,10 +33,11 @@ mod dylib_types {
 
     use crate::sys::libcuviddec_sys::{CUdevice, CUresult, CUuuid};
 
-    pub type cuDeviceGet = unsafe extern fn(*mut CUdevice, c_uint) -> CUresult;
-    pub type cuDeviceGetCount = unsafe extern fn(*mut c_uint) -> CUresult;
-    pub type cuDeviceGetName = unsafe extern fn(*mut c_char, c_int: c_int, CUdevice) -> CUresult;
-    pub type cuDeviceGetUuid = unsafe extern fn(*mut CUuuid, CUdevice) -> CUresult;
+    pub type cuDeviceGet = unsafe extern "C" fn(*mut CUdevice, c_uint) -> CUresult;
+    pub type cuDeviceGetCount = unsafe extern "C" fn(*mut c_uint) -> CUresult;
+    pub type cuDeviceGetName =
+        unsafe extern "C" fn(*mut c_char, c_int: c_int, CUdevice) -> CUresult;
+    pub type cuDeviceGetUuid = unsafe extern "C" fn(*mut CUuuid, CUdevice) -> CUresult;
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -68,13 +69,11 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
         call_cuda_sym!(sym_cu_device_get(&mut cu_device, ordinal));
 
         let cu_name_buffer = [0u8; 64];
-        call_cuda_sym!(
-            sym_cu_device_get_name(
-                cu_name_buffer.as_ptr() as *mut c_char, 
-                cu_name_buffer.len().try_into()?,
-                cu_device
-            )
-        );
+        call_cuda_sym!(sym_cu_device_get_name(
+            cu_name_buffer.as_ptr() as *mut c_char,
+            cu_name_buffer.len().try_into()?,
+            cu_device
+        ));
 
         let cu_name_raw = CStr::from_bytes_until_nul(&cu_name_buffer).unwrap();
 
@@ -82,25 +81,18 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
             let mut cu_uuid_buffer: CUuuid = unsafe { zeroed() };
             call_cuda_sym!(sym_cu_device_get_uuid(&mut cu_uuid_buffer, cu_device));
 
-            Uuid::from_slice(
-                unsafe {
-                    std::slice::from_raw_parts(
-                        cu_uuid_buffer.bytes.as_ptr() as *const u8,
-                        16,
-                    )
-                }
-            )?
+            Uuid::from_slice(unsafe {
+                std::slice::from_raw_parts(cu_uuid_buffer.bytes.as_ptr() as *const u8, 16)
+            })?
         } else {
             Uuid::nil()
         };
 
-        devices.push(
-            CudaDevice {
-                handle: cu_device,
-                name: cu_name_raw.to_string_lossy().to_string(),
-                uuid,
-            }
-        )
+        devices.push(CudaDevice {
+            handle: cu_device,
+            name: cu_name_raw.to_string_lossy().to_string(),
+            uuid,
+        })
     }
 
     Ok(devices)

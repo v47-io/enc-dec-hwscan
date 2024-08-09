@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::{ptr, slice};
-use std::alloc::{alloc_zeroed, Layout, realloc};
+use std::alloc::{alloc_zeroed, realloc, Layout};
 use std::ffi::{c_int, c_uint, CStr};
 use std::fs::{File, OpenOptions};
 use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
+use std::{ptr, slice};
 
 use libloading::Symbol;
 
 use dylib_types::*;
 
 use crate::dylib::{ensure_available, Libs};
-use crate::sys::va::{VA_ATTRIB_NOT_SUPPORTED, VAConfigAttrib, VADisplay, VAEntrypoint, VAProfile};
+use crate::sys::va::{VAConfigAttrib, VADisplay, VAEntrypoint, VAProfile, VA_ATTRIB_NOT_SUPPORTED};
 use crate::VaError;
 
 #[allow(non_camel_case_types, dead_code)]
@@ -35,16 +35,35 @@ mod dylib_types {
 
     use crate::sys::va::{VAConfigAttrib, VADisplay, VAEntrypoint, VAProfile, VAStatus};
 
-    pub type vaGetDisplayDRM = unsafe extern fn(fd: c_int) -> VADisplay;
-    pub type vaInitialize = unsafe extern fn(dpy: VADisplay, major_version: *mut c_int, minor_version: *mut c_int) -> VAStatus;
-    pub type vaQueryVendorString = unsafe extern fn(dpy: VADisplay) -> *const c_char;
-    pub type vaMaxNumProfiles = unsafe extern fn(dpy: VADisplay) -> c_int;
-    pub type vaMaxNumEntrypoints = unsafe extern fn(dpy: VADisplay) -> c_int;
+    pub type vaGetDisplayDRM = unsafe extern "C" fn(fd: c_int) -> VADisplay;
+    pub type vaInitialize = unsafe extern "C" fn(
+        dpy: VADisplay,
+        major_version: *mut c_int,
+        minor_version: *mut c_int,
+    ) -> VAStatus;
+    pub type vaQueryVendorString = unsafe extern "C" fn(dpy: VADisplay) -> *const c_char;
+    pub type vaMaxNumProfiles = unsafe extern "C" fn(dpy: VADisplay) -> c_int;
+    pub type vaMaxNumEntrypoints = unsafe extern "C" fn(dpy: VADisplay) -> c_int;
     // pub type vaMaxNumConfigAttributes = unsafe extern fn(dpy: VADisplay) -> c_int;
-    pub type vaQueryConfigProfiles = unsafe extern fn(dpy: VADisplay, profile_list: *mut VAProfile, num_profiles: *mut c_int) -> VAStatus;
-    pub type vaQueryConfigEntrypoints = unsafe extern fn(dpy: VADisplay, profile: VAProfile, entrypoint_list: *mut VAEntrypoint, num_entrypoints: *mut c_int) -> VAStatus;
-    pub type vaGetConfigAttributes = unsafe extern fn(dpy: VADisplay, profile: VAProfile, entrypoint: VAEntrypoint, attrib_list: *mut VAConfigAttrib, num_attribs: c_int) -> VAStatus;
-    pub type vaTerminate = unsafe extern fn(dpy: VADisplay) -> VAStatus;
+    pub type vaQueryConfigProfiles = unsafe extern "C" fn(
+        dpy: VADisplay,
+        profile_list: *mut VAProfile,
+        num_profiles: *mut c_int,
+    ) -> VAStatus;
+    pub type vaQueryConfigEntrypoints = unsafe extern "C" fn(
+        dpy: VADisplay,
+        profile: VAProfile,
+        entrypoint_list: *mut VAEntrypoint,
+        num_entrypoints: *mut c_int,
+    ) -> VAStatus;
+    pub type vaGetConfigAttributes = unsafe extern "C" fn(
+        dpy: VADisplay,
+        profile: VAProfile,
+        entrypoint: VAEntrypoint,
+        attrib_list: *mut VAConfigAttrib,
+        num_attribs: c_int,
+    ) -> VAStatus;
+    pub type vaTerminate = unsafe extern "C" fn(dpy: VADisplay) -> VAStatus;
 }
 
 #[derive(Debug)]
@@ -101,7 +120,7 @@ impl DrmDisplay {
 
         let drm_file = match OpenOptions::new().read(true).write(true).open(device_path) {
             Ok(drm_file) => drm_file,
-            Err(err) => return Err(VaError::FailedToOpenDevice(device_path.to_path_buf(), err))
+            Err(err) => return Err(VaError::FailedToOpenDevice(device_path.to_path_buf(), err)),
         };
 
         let sym_va_get_display_drm = get_sym!(libva_drm, vaGetDisplayDRM);
@@ -114,16 +133,21 @@ impl DrmDisplay {
             let mut version_major: c_int = 0;
             let mut version_minor: c_int = 0;
 
-            varesult_call_sym!(sym_va_initialize(va_display, &mut version_major, &mut version_minor));
+            varesult_call_sym!(sym_va_initialize(
+                va_display,
+                &mut version_major,
+                &mut version_minor
+            ));
 
             let sym_va_query_vendor_string = get_sym!(libva, vaQueryVendorString);
             let vendor_string = unsafe { sym_va_query_vendor_string(va_display) };
-            let vendor =
-                if vendor_string == ptr::null() {
-                    String::new()
-                } else {
-                    unsafe { CStr::from_ptr(vendor_string) }.to_string_lossy().to_string()
-                };
+            let vendor = if vendor_string == ptr::null() {
+                String::new()
+            } else {
+                unsafe { CStr::from_ptr(vendor_string) }
+                    .to_string_lossy()
+                    .to_string()
+            };
 
             Ok(DrmDisplay {
                 _drm_file: drm_file,
@@ -148,7 +172,10 @@ impl DrmDisplay {
     pub fn query_profiles(&self) -> Result<Vec<VAProfile>, VaError> {
         let max_num_profiles = call_sym!(self, va_max_num_profiles());
         if max_num_profiles < 0 {
-            return Err(VaError::OperationFailed("vaMaxNumProfiles returned a negative value".to_string(), -1));
+            return Err(VaError::OperationFailed(
+                "vaMaxNumProfiles returned a negative value".to_string(),
+                -1,
+            ));
         }
 
         let max_num_profiles = max_num_profiles as usize;
@@ -165,7 +192,10 @@ impl DrmDisplay {
     pub fn query_entrypoints(&self, profile: VAProfile) -> Result<Vec<VAEntrypoint>, VaError> {
         let max_num_entrypoints = call_sym!(self, va_max_num_entrypoints());
         if max_num_entrypoints < 0 {
-            return Err(VaError::OperationFailed("vaMaxNumEntrypoints returned a negative value".to_string(), -1));
+            return Err(VaError::OperationFailed(
+                "vaMaxNumEntrypoints returned a negative value".to_string(),
+                -1,
+            ));
         }
 
         let max_num_entrypoints = max_num_entrypoints as usize;
@@ -173,13 +203,20 @@ impl DrmDisplay {
         let array_ptr = alloc_array::<VAEntrypoint>(max_num_entrypoints);
         let mut num_entrypoints: c_int = 0;
 
-        varesult_call_sym!(self, va_query_config_entrypoints(profile, array_ptr, &mut num_entrypoints));
+        varesult_call_sym!(
+            self,
+            va_query_config_entrypoints(profile, array_ptr, &mut num_entrypoints)
+        );
 
         let array_ptr = realloc_array(array_ptr, num_entrypoints as usize, max_num_entrypoints);
         Ok(make_vec(array_ptr, num_entrypoints as usize))
     }
 
-    pub fn get_config_attributes(&self, profile: VAProfile, entrypoint: VAEntrypoint) -> Result<Vec<VAConfigAttrib>, VaError> {
+    pub fn get_config_attributes(
+        &self,
+        profile: VAProfile,
+        entrypoint: VAEntrypoint,
+    ) -> Result<Vec<VAConfigAttrib>, VaError> {
         /*let max_num_config_attributes = call_sym!(self, va_max_num_config_attributes());
         if max_num_config_attributes < 0 {
             return Err(VaError::OperationFailedT("vaMaxNumConfigAttributes returned a negative value".to_string(), -1));
@@ -194,29 +231,34 @@ impl DrmDisplay {
         let max_num_config_attributes = 57;
 
         let array_ptr = alloc_array::<VAConfigAttrib>(max_num_config_attributes);
-        let array_slice = unsafe { slice::from_raw_parts_mut(array_ptr, max_num_config_attributes) };
+        let array_slice =
+            unsafe { slice::from_raw_parts_mut(array_ptr, max_num_config_attributes) };
         for (i, raw_item) in array_slice.iter_mut().enumerate() {
             (*raw_item).type_ = i as c_uint;
             (*raw_item).value = VA_ATTRIB_NOT_SUPPORTED;
         }
 
-        varesult_call_sym!(self, va_get_config_attributes(profile, entrypoint, array_ptr, max_num_config_attributes as c_int));
+        varesult_call_sym!(
+            self,
+            va_get_config_attributes(
+                profile,
+                entrypoint,
+                array_ptr,
+                max_num_config_attributes as c_int
+            )
+        );
 
-        Ok(
-            make_vec(array_ptr, max_num_config_attributes)
-                .into_iter()
-                .filter(|it| it.value != VA_ATTRIB_NOT_SUPPORTED)
-                .collect()
-        )
+        Ok(make_vec(array_ptr, max_num_config_attributes)
+            .into_iter()
+            .filter(|it| it.value != VA_ATTRIB_NOT_SUPPORTED)
+            .collect())
     }
 }
 
 fn alloc_array<T: Sized>(num_items: usize) -> *mut T {
     let layout = Layout::array::<T>(num_items).unwrap();
 
-    unsafe {
-        alloc_zeroed(layout) as *mut T
-    }
+    unsafe { alloc_zeroed(layout) as *mut T }
 }
 
 fn realloc_array<T: Sized>(array_ptr: *mut T, num_items: usize, max_size: usize) -> *mut T {
@@ -234,9 +276,7 @@ fn realloc_array<T: Sized>(array_ptr: *mut T, num_items: usize, max_size: usize)
 }
 
 fn make_vec<T: Sized>(array_ptr: *mut T, num_items: usize) -> Vec<T> {
-    unsafe {
-        Vec::from_raw_parts(array_ptr, num_items, num_items)
-    }
+    unsafe { Vec::from_raw_parts(array_ptr, num_items, num_items) }
 }
 
 #[cfg(test)]
@@ -294,12 +334,8 @@ mod tests {
         dbg!(&entrypoints);
         assert!(!entrypoints.is_empty());
 
-        let config_attribs =
-            drm_display
-                .get_config_attributes(
-                    *profiles.first().unwrap(),
-                    *entrypoints.first().unwrap(),
-                )?;
+        let config_attribs = drm_display
+            .get_config_attributes(*profiles.first().unwrap(), *entrypoints.first().unwrap())?;
 
         dbg!(&config_attribs);
         assert!(!config_attribs.is_empty());

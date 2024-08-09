@@ -32,7 +32,7 @@ mod dylib_types {
 
     use crate::sys::va::VAStatus;
 
-    pub type vaErrorStr = unsafe extern fn(error_status: VAStatus) -> *const c_char;
+    pub type vaErrorStr = unsafe extern "C" fn(error_status: VAStatus) -> *const c_char;
 }
 
 #[derive(Error, Debug)]
@@ -58,16 +58,23 @@ impl VaError {
 
         let result_ptr = unsafe {
             SYM_VA_ERROR_STR.get_or_init(|| {
-                libva.get::<vaErrorStr>(b"vaErrorStr\0")
+                libva
+                    .get::<vaErrorStr>(b"vaErrorStr\0")
                     .expect("vaErrorStr not found in libva.so")
             })(status)
         };
 
         if result_ptr == ptr::null() {
-            Ok(VaError::OperationFailed("unknown error".to_string(), status))
+            Ok(VaError::OperationFailed(
+                "unknown error".to_string(),
+                status,
+            ))
         } else {
             let msg = unsafe { CStr::from_ptr(result_ptr) };
-            Ok(VaError::OperationFailed(msg.to_string_lossy().to_string(), status))
+            Ok(VaError::OperationFailed(
+                msg.to_string_lossy().to_string(),
+                status,
+            ))
         }
     }
 }

@@ -23,24 +23,23 @@ lazy_static! {
     static ref _LIBVA_RAW: Result<Library, Error> = unsafe {
         match Library::new("libva.so.2") {
             Ok(lib) => Ok(lib),
-            Err(_) => Library::new("libva.so")
+            Err(_) => Library::new("libva.so"),
         }
     };
-
     pub static ref LIBVA: Result<&'static Library, &'static Error> = _LIBVA_RAW.as_ref();
-
     static ref _LIBVA_DRM_RAW: Result<Library, Error> = unsafe {
         match Library::new("libva-drm.so.2") {
             Ok(lib) => Ok(lib),
-            Err(_) => Library::new("libva-drm.so")
+            Err(_) => Library::new("libva-drm.so"),
         }
     };
-
     pub static ref LIBVA_DRM: Result<&'static Library, &'static Error> = _LIBVA_DRM_RAW.as_ref();
 }
 
 #[cfg(test)]
-pub(crate) fn is_va_loaded() -> bool { LIBVA.is_ok() && LIBVA_DRM.is_ok() }
+pub(crate) fn is_va_loaded() -> bool {
+    LIBVA.is_ok() && LIBVA_DRM.is_ok()
+}
 
 #[derive(Copy, Clone)]
 pub struct Libs {
@@ -64,7 +63,7 @@ macro_rules! get_sym {
         unsafe {
             match $lib_var.get::<$sym_name>(stringify!($sym_name).as_bytes()) {
                 Ok(sym) => sym,
-                Err(_) => return Err(VaError::SymbolNotFound(stringify!($sym_name)))
+                Err(_) => return Err(VaError::SymbolNotFound(stringify!($sym_name))),
             }
         }
     }};

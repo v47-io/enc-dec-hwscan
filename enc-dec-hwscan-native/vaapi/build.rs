@@ -38,8 +38,12 @@ fn gen_bindings(path: &Path, out_path: &Path) {
         .unwrap_or_else(|_| panic!("Unable to generate bindings for {:?}", path));
 
     let header_file_name = path
-        .file_name().unwrap().to_str().unwrap()
-        .strip_suffix(".h").unwrap();
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .strip_suffix(".h")
+        .unwrap();
 
     let target_file_name = format!("{}.rs", header_file_name);
 

@@ -38,11 +38,11 @@ pub fn enumerate_devices() -> Result<Vec<PathBuf>, VaError> {
                                 result.push(dir_entry.path());
                             }
                         }
-                        Err(err) => return Err(VaError::FailedToEnumerateDevices(err))
+                        Err(err) => return Err(VaError::FailedToEnumerateDevices(err)),
                     }
                 }
             }
-            Err(err) => return Err(VaError::FailedToEnumerateDevices(err))
+            Err(err) => return Err(VaError::FailedToEnumerateDevices(err)),
         }
 
         if !result.is_empty() {
@@ -58,15 +58,19 @@ pub fn enumerate_devices() -> Result<Vec<PathBuf>, VaError> {
                 for dir_entry in dir_iter {
                     match dir_entry {
                         Ok(dir_entry) => {
-                            if dir_entry.file_name().to_string_lossy().starts_with("render") {
+                            if dir_entry
+                                .file_name()
+                                .to_string_lossy()
+                                .starts_with("render")
+                            {
                                 result.push(dir_entry.path());
                             }
                         }
-                        Err(err) => return Err(VaError::FailedToEnumerateDevices(err))
+                        Err(err) => return Err(VaError::FailedToEnumerateDevices(err)),
                     }
                 }
             }
-            Err(err) => return Err(VaError::FailedToEnumerateDevices(err))
+            Err(err) => return Err(VaError::FailedToEnumerateDevices(err)),
         }
 
         return Ok(result);

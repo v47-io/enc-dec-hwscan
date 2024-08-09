@@ -16,16 +16,16 @@
  */
 use std::panic::catch_unwind;
 
+pub use common::*;
 use ::nvidia::NvidiaError;
 use ::vaapi::VaError;
-pub use common::*;
 
 use crate::error::ErrorCode;
 use crate::nvidia::get_nvidia_devices;
 use crate::vaapi::get_vaapi_devices;
 
-mod nvidia;
 mod error;
+mod nvidia;
 mod vaapi;
 
 #[no_mangle]
@@ -60,16 +60,20 @@ pub unsafe extern "C" fn scan_devices(result: *mut *mut EncDecDevices) -> ErrorC
             }
         };
 
-        let all_devices =
-            nvidia_devices.into_iter()
-                .chain(vaapi_devices.into_iter())
-                .collect();
+        let all_devices = nvidia_devices
+            .into_iter()
+            .chain(vaapi_devices.into_iter())
+            .collect();
 
         // make sure this is done last and only if errno is going to be 0
         *result = Box::into_raw(Box::new(EncDecDevices::new(all_devices)));
         ErrorCode::Success
-    }).unwrap_or_else(|err| {
-        eprintln!("Critical error in enc_dec_hwscan::detect_devices: {:?}", err);
+    })
+    .unwrap_or_else(|err| {
+        eprintln!(
+            "Critical error in enc_dec_hwscan::detect_devices: {:?}",
+            err
+        );
         ErrorCode::CriticalError
     })
 }
@@ -81,7 +85,7 @@ fn map_nvidia_error_code(error: NvidiaError) -> ErrorCode {
         NvidiaError::SymbolNotFound(_) => ErrorCode::DriverFailure,
         NvidiaError::NvEncFunctionNotAvailable(_) => ErrorCode::DriverFailure,
         NvidiaError::FailedToConvertUuid(_) => ErrorCode::ConversionFailed,
-        NvidiaError::FailedToConvertResult(_) => ErrorCode::ConversionFailed
+        NvidiaError::FailedToConvertResult(_) => ErrorCode::ConversionFailed,
     }
 }
 
@@ -92,7 +96,7 @@ fn map_vaapi_error_code(error: VaError) -> ErrorCode {
         VaError::FailedToEnumerateDevices(_) => ErrorCode::DriverFailure,
         VaError::FailedToOpenDevice(_, _) => ErrorCode::DriverFailure,
         VaError::FailedToGetDisplay(_) => ErrorCode::DriverFailure,
-        VaError::OperationFailed(_, _) => ErrorCode::OperationFailed
+        VaError::OperationFailed(_, _) => ErrorCode::OperationFailed,
     }
 }
 

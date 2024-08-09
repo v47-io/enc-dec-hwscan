@@ -21,8 +21,8 @@ use libloading::{Error, Library};
 
 use dylib_types::*;
 
-use crate::NvidiaError;
 use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
+use crate::NvidiaError;
 
 #[allow(non_camel_case_types, dead_code)]
 mod dylib_types {
@@ -30,34 +30,27 @@ mod dylib_types {
 
     use crate::sys::libcuviddec_sys::CUresult;
 
-    pub type cuInit = unsafe extern fn(c_uint: c_uint) -> CUresult;
+    pub type cuInit = unsafe extern "C" fn(c_uint: c_uint) -> CUresult;
 }
 
 lazy_static! {
-    static ref _LIBCUDA_RAW: Result<Library, Error> = unsafe {
-        Library::new("libcuda.so")
-    };
-
+    static ref _LIBCUDA_RAW: Result<Library, Error> = unsafe { Library::new("libcuda.so") };
     pub static ref LIBCUDA: Result<&'static Library, &'static Error> = _LIBCUDA_RAW.as_ref();
-
-    static ref _LIBCUVIDDEC_RAW: Result<Library, Error> = unsafe {
-        Library::new("libnvcuvid.so")
-    };
-
-    pub static ref LIBCUVIDDEC: Result<&'static Library, &'static Error> = _LIBCUVIDDEC_RAW.as_ref();
-
-    static ref _LIBNV_ENCODE_RAW: Result<Library, Error> = unsafe {
-        Library::new("libnvidia-encode.so")
-    };
-
-    pub static ref LIBNV_ENCODE: Result<&'static Library, &'static Error> = _LIBNV_ENCODE_RAW.as_ref();
-
+    static ref _LIBCUVIDDEC_RAW: Result<Library, Error> = unsafe { Library::new("libnvcuvid.so") };
+    pub static ref LIBCUVIDDEC: Result<&'static Library, &'static Error> =
+        _LIBCUVIDDEC_RAW.as_ref();
+    static ref _LIBNV_ENCODE_RAW: Result<Library, Error> =
+        unsafe { Library::new("libnvidia-encode.so") };
+    pub static ref LIBNV_ENCODE: Result<&'static Library, &'static Error> =
+        _LIBNV_ENCODE_RAW.as_ref();
     pub static ref CUDA_INITIALIZED: Mutex<bool> = Mutex::new(false);
     pub static ref CUDA_INIT_FAILED: Mutex<bool> = Mutex::new(false);
 }
 
 #[cfg(test)]
-pub(crate) fn is_cuda_loaded() -> bool { (*LIBCUDA).is_ok() }
+pub(crate) fn is_cuda_loaded() -> bool {
+    (*LIBCUDA).is_ok()
+}
 
 #[derive(Copy, Clone)]
 pub struct Libs {
@@ -119,11 +112,11 @@ macro_rules! call_cuda_sym {
 macro_rules! get_sym {
     ($lib_var:expr, $sym_name:ident) => {{
         use crate::NvidiaError;
-        
+
         unsafe {
             match $lib_var.get::<$sym_name>(stringify!($sym_name).as_bytes()) {
                 Ok(sym) => sym,
-                Err(_) => return Err(NvidiaError::SymbolNotFound(stringify!($sym_name)))
+                Err(_) => return Err(NvidiaError::SymbolNotFound(stringify!($sym_name))),
             }
         }
     }};
@@ -136,7 +129,7 @@ macro_rules! get_sym_opt {
         unsafe {
             match $lib_var.get::<$sym_name>(stringify!($sym_name).as_bytes()) {
                 Ok(sym) => Some(sym),
-                Err(_) => None
+                Err(_) => None,
             }
         }
     }};

@@ -22,30 +22,24 @@ use common::{Chroma, Codec, CodecDetails, ColorDepth, DecodingSpec};
 use dylib_types::*;
 
 use crate::dylib::{ensure_available, Libs};
-use crate::NvidiaError;
 use crate::sys::libcuviddec_sys::{
     cudaVideoChromaFormat, cudaVideoChromaFormat_enum_cudaVideoChromaFormat_420,
     cudaVideoChromaFormat_enum_cudaVideoChromaFormat_422,
     cudaVideoChromaFormat_enum_cudaVideoChromaFormat_444,
-    cudaVideoChromaFormat_enum_cudaVideoChromaFormat_Monochrome,
-    cudaVideoCodec,
-    cudaVideoCodec_enum_cudaVideoCodec_AV1,
-    cudaVideoCodec_enum_cudaVideoCodec_H264,
-    cudaVideoCodec_enum_cudaVideoCodec_HEVC,
-    cudaVideoCodec_enum_cudaVideoCodec_MPEG1,
-    cudaVideoCodec_enum_cudaVideoCodec_MPEG2,
-    cudaVideoCodec_enum_cudaVideoCodec_MPEG4,
-    cudaVideoCodec_enum_cudaVideoCodec_VC1,
-    cudaVideoCodec_enum_cudaVideoCodec_VP8,
-    cudaVideoCodec_enum_cudaVideoCodec_VP9,
-    CUVIDDECODECAPS,
+    cudaVideoChromaFormat_enum_cudaVideoChromaFormat_Monochrome, cudaVideoCodec,
+    cudaVideoCodec_enum_cudaVideoCodec_AV1, cudaVideoCodec_enum_cudaVideoCodec_H264,
+    cudaVideoCodec_enum_cudaVideoCodec_HEVC, cudaVideoCodec_enum_cudaVideoCodec_MPEG1,
+    cudaVideoCodec_enum_cudaVideoCodec_MPEG2, cudaVideoCodec_enum_cudaVideoCodec_MPEG4,
+    cudaVideoCodec_enum_cudaVideoCodec_VC1, cudaVideoCodec_enum_cudaVideoCodec_VP8,
+    cudaVideoCodec_enum_cudaVideoCodec_VP9, CUVIDDECODECAPS,
 };
+use crate::NvidiaError;
 
 #[allow(non_camel_case_types, dead_code)]
 mod dylib_types {
     use crate::sys::libcuviddec_sys::{CUresult, CUVIDDECODECAPS};
 
-    pub type cuvidGetDecoderCaps = unsafe extern fn(*mut CUVIDDECODECAPS) -> CUresult;
+    pub type cuvidGetDecoderCaps = unsafe extern "C" fn(*mut CUVIDDECODECAPS) -> CUresult;
 }
 
 const CUDA_CODECS: [cudaVideoCodec; 9] = [
@@ -64,7 +58,7 @@ const CUDA_CHROMA_FORMATS: [cudaVideoChromaFormat; 4] = [
     cudaVideoChromaFormat_enum_cudaVideoChromaFormat_Monochrome,
     cudaVideoChromaFormat_enum_cudaVideoChromaFormat_420,
     cudaVideoChromaFormat_enum_cudaVideoChromaFormat_422,
-    cudaVideoChromaFormat_enum_cudaVideoChromaFormat_444
+    cudaVideoChromaFormat_enum_cudaVideoChromaFormat_444,
 ];
 
 const CUDA_BIT_DEPTHS: [u8; 3] = [8, 10, 12];
@@ -78,17 +72,20 @@ pub struct CudaDecodeSpec {
 
 impl CudaDecodeSpec {
     pub fn all() -> Vec<CudaDecodeSpec> {
-        CUDA_CODECS.iter().flat_map(|&codec_type| {
-            CUDA_CHROMA_FORMATS.iter().flat_map(move |&chroma_format| {
-                CUDA_BIT_DEPTHS.iter().map(move |&bit_depth| {
-                    CudaDecodeSpec {
-                        codec_type,
-                        chroma_format,
-                        bit_depth,
-                    }
+        CUDA_CODECS
+            .iter()
+            .flat_map(|&codec_type| {
+                CUDA_CHROMA_FORMATS.iter().flat_map(move |&chroma_format| {
+                    CUDA_BIT_DEPTHS
+                        .iter()
+                        .map(move |&bit_depth| CudaDecodeSpec {
+                            codec_type,
+                            chroma_format,
+                            bit_depth,
+                        })
                 })
             })
-        }).collect()
+            .collect()
     }
 }
 
@@ -111,7 +108,8 @@ pub fn get_decode_capabilities(specs: &[CudaDecodeSpec]) -> Result<Vec<CodecDeta
 
         if cuvid_decode_caps.bIsSupported != 0 {
             result
-                .entry(map_codec_type(spec.codec_type)).or_default()
+                .entry(map_codec_type(spec.codec_type))
+                .or_default()
                 .push(DecodingSpec {
                     chroma: map_chroma_format(spec.chroma_format),
                     color_depth: map_bit_depth(spec.bit_depth),
@@ -121,14 +119,10 @@ pub fn get_decode_capabilities(specs: &[CudaDecodeSpec]) -> Result<Vec<CodecDeta
         }
     }
 
-    Ok(
-        result
-            .into_iter()
-            .map(|(codec, specs)| {
-                CodecDetails::new(codec, specs, vec![])
-            })
-            .collect()
-    )
+    Ok(result
+        .into_iter()
+        .map(|(codec, specs)| CodecDetails::new(codec, specs, vec![]))
+        .collect())
 }
 
 fn map_codec_type(cuda_video_codec: cudaVideoCodec) -> Codec {
@@ -143,7 +137,7 @@ fn map_codec_type(cuda_video_codec: cudaVideoCodec) -> Codec {
         cudaVideoCodec_enum_cudaVideoCodec_VP8 => Codec::Vp8,
         cudaVideoCodec_enum_cudaVideoCodec_VP9 => Codec::Vp9,
         cudaVideoCodec_enum_cudaVideoCodec_AV1 => Codec::Av1,
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
@@ -154,7 +148,7 @@ fn map_chroma_format(cuda_chroma_format: cudaVideoChromaFormat) -> Chroma {
         cudaVideoChromaFormat_enum_cudaVideoChromaFormat_420 => Chroma::Yuv420,
         cudaVideoChromaFormat_enum_cudaVideoChromaFormat_422 => Chroma::Yuv422,
         cudaVideoChromaFormat_enum_cudaVideoChromaFormat_444 => Chroma::Yuv444,
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
@@ -163,7 +157,7 @@ fn map_bit_depth(bit_depth: u8) -> ColorDepth {
         8 => ColorDepth::Bit8,
         10 => ColorDepth::Bit10,
         12 => ColorDepth::Bit12,
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
@@ -187,9 +181,7 @@ mod tests {
 
         let context = CudaContext::new(devices.get(0).unwrap())?;
 
-        let caps = context.with_ctx(|| {
-            get_decode_capabilities(&CudaDecodeSpec::all())
-        })?;
+        let caps = context.with_ctx(|| get_decode_capabilities(&CudaDecodeSpec::all()))?;
 
         dbg!(&caps);
         assert!(!caps.is_empty());

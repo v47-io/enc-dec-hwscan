@@ -21,5 +21,5 @@ pub enum ErrorCode {
     Success = 0,
     DriverFailure = 1,
     OperationFailed = 2,
-    ConversionFailed = 3
+    ConversionFailed = 3,
 }

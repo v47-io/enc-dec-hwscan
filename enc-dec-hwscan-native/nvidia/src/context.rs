@@ -34,10 +34,10 @@ mod dylib_types {
 
     use crate::sys::libcuviddec_sys::{CUcontext, CUdevice, CUresult};
 
-    pub type cuCtxCreate = unsafe extern fn(*mut CUcontext, c_uint, CUdevice) -> CUresult;
-    pub type cuCtxDestroy = unsafe extern fn(CUcontext) -> CUresult;
-    pub type cuCtxPushCurrent = unsafe extern fn(CUcontext) -> CUresult;
-    pub type cuCtxPopCurrent = unsafe extern fn(*mut CUcontext) -> CUresult;
+    pub type cuCtxCreate = unsafe extern "C" fn(*mut CUcontext, c_uint, CUdevice) -> CUresult;
+    pub type cuCtxDestroy = unsafe extern "C" fn(CUcontext) -> CUresult;
+    pub type cuCtxPushCurrent = unsafe extern "C" fn(CUcontext) -> CUresult;
+    pub type cuCtxPopCurrent = unsafe extern "C" fn(*mut CUcontext) -> CUresult;
 }
 
 #[derive(Debug)]
@@ -49,16 +49,16 @@ pub struct CudaContext<'ctx> {
 impl<'a> Drop for CudaContext<'a> {
     fn drop(&mut self) {
         let Libs { lib_cuda, .. } =
-            ensure_available()
-                .expect("How did we get here if lib_cuda isn't available?");
+            ensure_available().expect("How did we get here if lib_cuda isn't available?");
 
         let sym_cu_ctx_destroy =
-            unsafe {
-                lib_cuda.get::<cuCtxDestroy>(stringify!( cuCtxDestroy ).as_bytes())
-            }.expect("cuCtxDestroy not found in lib_cuda");
+            unsafe { lib_cuda.get::<cuCtxDestroy>(stringify!(cuCtxDestroy).as_bytes()) }
+                .expect("cuCtxDestroy not found in lib_cuda");
 
         let context = self.context.lock().unwrap();
-        unsafe { sym_cu_ctx_destroy(*context.get()); }
+        unsafe {
+            sym_cu_ctx_destroy(*context.get());
+        }
     }
 }
 
@@ -98,17 +98,16 @@ impl<'a> CudaContext<'a> {
 
         call_cuda_sym!(sym_cu_ctx_push_current(*context.get()));
 
-        let f_result =
-            match catch_unwind(f) {
-                Ok(res) => res,
-                Err(err) => {
-                    // we clean up the context on panic, so we don't leave the GPU in an
-                    // unexpected state before propagating the original panic value
-                    self.destroy(unsafe { *context.get() })?;
+        let f_result = match catch_unwind(f) {
+            Ok(res) => res,
+            Err(err) => {
+                // we clean up the context on panic, so we don't leave the GPU in an
+                // unexpected state before propagating the original panic value
+                self.destroy(unsafe { *context.get() })?;
 
-                    panic_any(err);
-                }
-            };
+                panic_any(err);
+            }
+        };
 
         let ctx_ptr = context.get();
         // This won't change the actual context pointer, we just need
@@ -142,7 +141,9 @@ impl<'a> CudaContext<'a> {
         let Libs { lib_cuda, .. } = ensure_available()?;
 
         let sym_cu_ctx_destroy = get_sym!(lib_cuda, cuCtxDestroy);
-        unsafe { sym_cu_ctx_destroy(ctx); }
+        unsafe {
+            sym_cu_ctx_destroy(ctx);
+        }
 
         Ok(())
     }

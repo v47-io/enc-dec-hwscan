@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-pub use decode::{CudaDecodeSpec, get_decode_capabilities};
+pub use decode::{get_decode_capabilities, CudaDecodeSpec};
 pub use encode::get_encode_capabilities;
 
 mod decode;

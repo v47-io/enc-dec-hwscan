@@ -25,15 +25,19 @@ use uuid::Uuid;
 use dylib_types::*;
 
 use crate::dylib::{ensure_available, Libs};
-use crate::NvidiaError;
 use crate::sys::libcuviddec_sys::CUcontext;
-use crate::sys::libnv_encode_api_sys::{_NV_ENC_DEVICE_TYPE_NV_ENC_DEVICE_TYPE_CUDA, _NVENCSTATUS_NV_ENC_SUCCESS, GUID, NV_ENC_CAPS_PARAM, NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS, NV_ENCODE_API_FUNCTION_LIST};
+use crate::sys::libnv_encode_api_sys::{
+    GUID, NV_ENCODE_API_FUNCTION_LIST, NV_ENC_CAPS_PARAM, NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
+    _NVENCSTATUS_NV_ENC_SUCCESS, _NV_ENC_DEVICE_TYPE_NV_ENC_DEVICE_TYPE_CUDA,
+};
+use crate::NvidiaError;
 
 #[allow(non_camel_case_types, dead_code)]
 mod dylib_types {
-    use crate::sys::libnv_encode_api_sys::{NV_ENCODE_API_FUNCTION_LIST, NVENCSTATUS};
+    use crate::sys::libnv_encode_api_sys::{NVENCSTATUS, NV_ENCODE_API_FUNCTION_LIST};
 
-    pub type NvEncodeAPICreateInstance = unsafe extern fn(*mut NV_ENCODE_API_FUNCTION_LIST) -> NVENCSTATUS;
+    pub type NvEncodeAPICreateInstance =
+        unsafe extern "C" fn(*mut NV_ENCODE_API_FUNCTION_LIST) -> NVENCSTATUS;
 }
 
 const NVENCAPI_MAJOR_VERSION: u32 = 7;
@@ -70,10 +74,10 @@ pub struct NvEncoder<'enc> {
 impl<'a> Drop for NvEncoder<'a> {
     fn drop(&mut self) {
         unsafe {
-            let nv_enc_destroy_encoder =
-                self.encode_api
-                    .nvEncDestroyEncoder
-                    .expect("no nvEncDestroyEncoder? weird...");
+            let nv_enc_destroy_encoder = self
+                .encode_api
+                .nvEncDestroyEncoder
+                .expect("no nvEncDestroyEncoder? weird...");
 
             let nvencstatus = nv_enc_destroy_encoder(self.handle);
 
@@ -126,7 +130,11 @@ impl<'a> NvEncoder<'a> {
                     return Err(NvidiaError::OperationFailed(nvencstatus));
                 }
             },
-            None => return Err(NvidiaError::NvEncFunctionNotAvailable(stringify!(nvEncOpenEncodeSessionEx)))
+            None => {
+                return Err(NvidiaError::NvEncFunctionNotAvailable(stringify!(
+                    nvEncOpenEncodeSessionEx
+                )))
+            }
         }
 
         Ok(NvEncoder {
@@ -141,17 +149,26 @@ impl<'a> NvEncoder<'a> {
         call_encoder_fn!(self, nvEncGetEncodeGUIDCount(&mut guid_count));
 
         let guids_ptr = alloc_guid_array(guid_count);
-        call_encoder_fn!(self, nvEncGetEncodeGUIDs(guids_ptr, guid_count, &mut guid_count));
+        call_encoder_fn!(
+            self,
+            nvEncGetEncodeGUIDs(guids_ptr, guid_count, &mut guid_count)
+        );
 
         Ok(make_uuid_vec(guids_ptr, guid_count as usize)?)
     }
 
     pub fn get_encode_profile_guids(&self, codec_guid: &Uuid) -> Result<Vec<Uuid>, NvidiaError> {
         let mut guid_count = 0u32;
-        call_encoder_fn!(self, nvEncGetEncodeProfileGUIDCount(codec_guid.into(), &mut guid_count));
+        call_encoder_fn!(
+            self,
+            nvEncGetEncodeProfileGUIDCount(codec_guid.into(), &mut guid_count)
+        );
 
         let guids_ptr = alloc_guid_array(guid_count);
-        call_encoder_fn!(self, nvEncGetEncodeProfileGUIDs(codec_guid.into(), guids_ptr, guid_count, &mut guid_count));
+        call_encoder_fn!(
+            self,
+            nvEncGetEncodeProfileGUIDs(codec_guid.into(), guids_ptr, guid_count, &mut guid_count)
+        );
 
         Ok(make_uuid_vec(guids_ptr, guid_count as usize)?)
     }
@@ -162,7 +179,10 @@ impl<'a> NvEncoder<'a> {
         enc_caps_param.capsToQuery = cap as c_uint;
 
         let mut caps_val = 0i32;
-        call_encoder_fn!(self, nvEncGetEncodeCaps(codec_guid.into(), &mut enc_caps_param, &mut caps_val));
+        call_encoder_fn!(
+            self,
+            nvEncGetEncodeCaps(codec_guid.into(), &mut enc_caps_param, &mut caps_val)
+        );
 
         Ok(caps_val)
     }
@@ -171,16 +191,11 @@ impl<'a> NvEncoder<'a> {
 fn alloc_guid_array(guid_count: u32) -> *mut GUID {
     let guid_raw_layout = Layout::array::<GUID>(guid_count as usize).unwrap();
 
-    unsafe {
-        alloc_zeroed(guid_raw_layout) as *mut GUID
-    }
+    unsafe { alloc_zeroed(guid_raw_layout) as *mut GUID }
 }
 
 fn make_uuid_vec(guids_raw: *mut GUID, guid_count: usize) -> Result<Vec<Uuid>, NvidiaError> {
-    let guids_raw =
-        unsafe {
-            Vec::from_raw_parts(guids_raw, guid_count, guid_count)
-        };
+    let guids_raw = unsafe { Vec::from_raw_parts(guids_raw, guid_count, guid_count) };
 
     let mut result = Vec::new();
 
@@ -198,19 +213,49 @@ pub mod guid {
 
     use crate::sys::libnv_encode_api_sys::GUID;
 
-    pub const CODEC_H264: Uuid = Uuid::from_bytes([0x6b, 0xc8, 0x27, 0x62, 0x4e, 0x63, 0x4c, 0xa4, 0xaa, 0x85, 0x1e, 0x50, 0xf3, 0x21, 0xf6, 0xbf]);
-    pub const CODEC_HEVC: Uuid = Uuid::from_bytes([0x79, 0x0c, 0xdc, 0x88, 0x45, 0x22, 0x4d, 0x7b, 0x94, 0x25, 0xbd, 0xa9, 0x97, 0x5f, 0x76, 0x03]);
-    pub const CODEC_AV1: Uuid = Uuid::from_bytes([0x0a, 0x35, 0x22, 0x89, 0x0a, 0xa7, 0x47, 0x59, 0x86, 0x2d, 0x5d, 0x15, 0xcd, 0x16, 0xd2, 0x54]);
+    pub const CODEC_H264: Uuid = Uuid::from_bytes([
+        0x6b, 0xc8, 0x27, 0x62, 0x4e, 0x63, 0x4c, 0xa4, 0xaa, 0x85, 0x1e, 0x50, 0xf3, 0x21, 0xf6,
+        0xbf,
+    ]);
+    pub const CODEC_HEVC: Uuid = Uuid::from_bytes([
+        0x79, 0x0c, 0xdc, 0x88, 0x45, 0x22, 0x4d, 0x7b, 0x94, 0x25, 0xbd, 0xa9, 0x97, 0x5f, 0x76,
+        0x03,
+    ]);
+    pub const CODEC_AV1: Uuid = Uuid::from_bytes([
+        0x0a, 0x35, 0x22, 0x89, 0x0a, 0xa7, 0x47, 0x59, 0x86, 0x2d, 0x5d, 0x15, 0xcd, 0x16, 0xd2,
+        0x54,
+    ]);
 
-    pub const H264_PROFILE_BASELINE: Uuid = Uuid::from_bytes([0x07, 0x27, 0xbc, 0xaa, 0x78, 0xc4, 0x4c, 0x83, 0x8c, 0x2f, 0xef, 0x3d, 0xff, 0x26, 0x7c, 0x6a]);
-    pub const H264_PROFILE_MAIN: Uuid = Uuid::from_bytes([0x60, 0xb5, 0xc1, 0xd4, 0x67, 0xfe, 0x47, 0x90, 0x94, 0xd5, 0xc4, 0x72, 0x6d, 0x7b, 0x6e, 0x6d]);
-    pub const H264_PROFILE_HIGH: Uuid = Uuid::from_bytes([0xe7, 0xcb, 0xc3, 0x09, 0x4f, 0x7a, 0x4b, 0x89, 0xaf, 0x2a, 0xd5, 0x37, 0xc9, 0x2b, 0xe3, 0x10]);
-    pub const H264_PROFILE_HIGH_444: Uuid = Uuid::from_bytes([0x7a, 0xc6, 0x63, 0xcb, 0xa5, 0x98, 0x49, 0x60, 0xb8, 0x44, 0x33, 0x9b, 0x26, 0x1a, 0x7d, 0x52]);
+    pub const H264_PROFILE_BASELINE: Uuid = Uuid::from_bytes([
+        0x07, 0x27, 0xbc, 0xaa, 0x78, 0xc4, 0x4c, 0x83, 0x8c, 0x2f, 0xef, 0x3d, 0xff, 0x26, 0x7c,
+        0x6a,
+    ]);
+    pub const H264_PROFILE_MAIN: Uuid = Uuid::from_bytes([
+        0x60, 0xb5, 0xc1, 0xd4, 0x67, 0xfe, 0x47, 0x90, 0x94, 0xd5, 0xc4, 0x72, 0x6d, 0x7b, 0x6e,
+        0x6d,
+    ]);
+    pub const H264_PROFILE_HIGH: Uuid = Uuid::from_bytes([
+        0xe7, 0xcb, 0xc3, 0x09, 0x4f, 0x7a, 0x4b, 0x89, 0xaf, 0x2a, 0xd5, 0x37, 0xc9, 0x2b, 0xe3,
+        0x10,
+    ]);
+    pub const H264_PROFILE_HIGH_444: Uuid = Uuid::from_bytes([
+        0x7a, 0xc6, 0x63, 0xcb, 0xa5, 0x98, 0x49, 0x60, 0xb8, 0x44, 0x33, 0x9b, 0x26, 0x1a, 0x7d,
+        0x52,
+    ]);
 
-    pub const HEVC_PROFILE_MAIN: Uuid = Uuid::from_bytes([0xb5, 0x14, 0xc3, 0x9a, 0xb5, 0x5b, 0x40, 0xfa, 0x87, 0x8f, 0xf1, 0x25, 0x3b, 0x4d, 0xfd, 0xec]);
-    pub const HEVC_PROFILE_MAIN10: Uuid = Uuid::from_bytes([0xfa, 0x4d, 0x2b, 0x6c, 0x3a, 0x5b, 0x41, 0x1a, 0x80, 0x18, 0x0a, 0x3f, 0x5e, 0x3c, 0x9b, 0xe5]);
+    pub const HEVC_PROFILE_MAIN: Uuid = Uuid::from_bytes([
+        0xb5, 0x14, 0xc3, 0x9a, 0xb5, 0x5b, 0x40, 0xfa, 0x87, 0x8f, 0xf1, 0x25, 0x3b, 0x4d, 0xfd,
+        0xec,
+    ]);
+    pub const HEVC_PROFILE_MAIN10: Uuid = Uuid::from_bytes([
+        0xfa, 0x4d, 0x2b, 0x6c, 0x3a, 0x5b, 0x41, 0x1a, 0x80, 0x18, 0x0a, 0x3f, 0x5e, 0x3c, 0x9b,
+        0xe5,
+    ]);
 
-    pub const AV1_PROFILE_MAIN: Uuid = Uuid::from_bytes([0x5f, 0x2a, 0x39, 0xf5, 0xf1, 0x4e, 0x4f, 0x95, 0x9a, 0x9e, 0xb7, 0x6d, 0x56, 0x8f, 0xcf, 0x97]);
+    pub const AV1_PROFILE_MAIN: Uuid = Uuid::from_bytes([
+        0x5f, 0x2a, 0x39, 0xf5, 0xf1, 0x4e, 0x4f, 0x95, 0x9a, 0x9e, 0xb7, 0x6d, 0x56, 0x8f, 0xcf,
+        0x97,
+    ]);
 
     impl TryFrom<GUID> for Uuid {
         type Error = uuid::Error;
@@ -220,7 +265,8 @@ pub mod guid {
             let data2_bytes: [u8; 2] = value.Data2.to_be_bytes();
             let data3_bytes: [u8; 2] = value.Data3.to_be_bytes();
 
-            let full_bytes_vec: Vec<&[u8]> = vec![&data1_bytes, &data2_bytes, &data3_bytes, &value.Data4];
+            let full_bytes_vec: Vec<&[u8]> =
+                vec![&data1_bytes, &data2_bytes, &data3_bytes, &value.Data4];
             let full_bytes: Vec<u8> = full_bytes_vec.concat();
 
             Uuid::from_slice(&full_bytes)
@@ -273,7 +319,8 @@ mod tests {
             dbg!(&encode_guids);
             assert!(!encode_guids.is_empty());
 
-            let encode_profile_guids = encoder.get_encode_profile_guids(encode_guids.get(0).unwrap())?;
+            let encode_profile_guids =
+                encoder.get_encode_profile_guids(encode_guids.get(0).unwrap())?;
 
             dbg!(&encode_profile_guids);
             assert!(!encode_profile_guids.is_empty());

@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::{mem, ptr};
 use std::ffi::{c_char, CString};
+use std::{mem, ptr};
 
 use crate::utils::{drop_vec, vec_to_ptr};
 
@@ -93,20 +93,22 @@ impl CodecDetails {
         }
     }
 
-    pub fn combine(codec: Codec, decoding: Option<CodecDetails>, encoding: Option<CodecDetails>) -> Self {
-        let (decoding_specs, num_decoding_specs) =
-            if let Some(decoding) = decoding {
-                unsafe { decoding.into_raw_decoding_specs() }
-            } else {
-                (ptr::null_mut(), 0)
-            };
+    pub fn combine(
+        codec: Codec,
+        decoding: Option<CodecDetails>,
+        encoding: Option<CodecDetails>,
+    ) -> Self {
+        let (decoding_specs, num_decoding_specs) = if let Some(decoding) = decoding {
+            unsafe { decoding.into_raw_decoding_specs() }
+        } else {
+            (ptr::null_mut(), 0)
+        };
 
-        let (encoding_specs, num_encoding_specs) =
-            if let Some(encoding) = encoding {
-                unsafe { encoding.into_raw_encoding_specs() }
-            } else {
-                (ptr::null_mut(), 0)
-            };
+        let (encoding_specs, num_encoding_specs) = if let Some(encoding) = encoding {
+            unsafe { encoding.into_raw_encoding_specs() }
+        } else {
+            (ptr::null_mut(), 0)
+        };
 
         Self {
             codec,
@@ -122,14 +124,22 @@ impl CodecDetails {
     }
 
     pub unsafe fn into_raw_decoding_specs(self) -> (*mut DecodingSpec, u32) {
-        let Self { decoding_specs, num_decoding_specs, .. } = self;
+        let Self {
+            decoding_specs,
+            num_decoding_specs,
+            ..
+        } = self;
         mem::forget(self);
 
         (decoding_specs, num_decoding_specs)
     }
 
     pub unsafe fn into_raw_encoding_specs(self) -> (*mut EncodingSpec, u32) {
-        let Self { encoding_specs, num_encoding_specs, .. } = self;
+        let Self {
+            encoding_specs,
+            num_encoding_specs,
+            ..
+        } = self;
         mem::forget(self);
 
         (encoding_specs, num_encoding_specs)
@@ -198,7 +208,12 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn new_with_ordinal(driver: Driver, ordinal: u8, name: String, codecs: Vec<CodecDetails>) -> Self {
+    pub fn new_with_ordinal(
+        driver: Driver,
+        ordinal: u8,
+        name: String,
+        codecs: Vec<CodecDetails>,
+    ) -> Self {
         let name = CString::new(name).unwrap();
         let (codecs, num_codecs) = vec_to_ptr(codecs);
 
@@ -212,7 +227,12 @@ impl Device {
         }
     }
 
-    pub fn new_with_path(driver: Driver, path: String, name: Option<String>, codecs: Vec<CodecDetails>) -> Self {
+    pub fn new_with_path(
+        driver: Driver,
+        path: String,
+        name: Option<String>,
+        codecs: Vec<CodecDetails>,
+    ) -> Self {
         let path = CString::new(path).unwrap();
         let name = name.map(|it| CString::new(it).unwrap());
         let (codecs, num_codecs) = vec_to_ptr(codecs);
@@ -221,7 +241,9 @@ impl Device {
             driver,
             ordinal: 0,
             path: path.into_raw() as *mut c_char,
-            name: name.map(|it| it.into_raw()).unwrap_or_else(|| ptr::null_mut()),
+            name: name
+                .map(|it| it.into_raw())
+                .unwrap_or_else(|| ptr::null_mut()),
             codecs,
             num_codecs,
         }
