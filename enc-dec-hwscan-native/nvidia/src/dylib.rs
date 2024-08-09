@@ -133,8 +133,6 @@ macro_rules! get_sym {
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! get_sym_opt {
     ($lib_var:expr, $sym_name:ident) => {{
-        use crate::NvidiaError;
-
         unsafe {
             match $lib_var.get::<$sym_name>(stringify!($sym_name).as_bytes()) {
                 Ok(sym) => Some(sym),
