@@ -27,3 +27,26 @@ allOpen {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.quarkusBuild {
+    nativeArgs {
+        @Suppress("UNCHECKED_CAST")
+        this as MutableMap<String, Any>
+
+        put(
+            "additional-build-args",
+            listOf(
+                "-Ob",
+                "-H:+UnlockExperimentalVMOptions",
+                "-H:+ForeignAPISupport",
+                "-H:-UnlockExperimentalVMOptions",
+                "--enable-native-access=ALL-UNNAMED"
+            ).joinToString(",")
+        )
+
+        put(
+            "builder-image",
+            "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22"
+        )
+    }
+}

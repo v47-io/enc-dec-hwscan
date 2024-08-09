@@ -27,7 +27,7 @@ import io.v47.encDecHwscan.quarkus.recorder.NativeLoadRecorder
 
 internal class EncDecHwscanProcessor {
     @BuildStep
-    fun feature() = FeatureBuildItem("ms47-enc-dec-hwscan")
+    fun feature() = FeatureBuildItem("enc-dec-hwscan")
 
     @BuildStep
     fun nativeFeature() = NativeImageFeatureBuildItem("io.v47.encDecHwscan.svm.EncDecHwscanFeature")
