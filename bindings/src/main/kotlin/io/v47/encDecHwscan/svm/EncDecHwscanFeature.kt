@@ -14,27 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.v47.encDecHwscan.it
+package io.v47.encDecHwscan.svm
 
-import io.quarkus.test.junit.QuarkusTest
-import io.restassured.RestAssured
-import org.apache.http.HttpStatus
-import org.junit.jupiter.api.Test
+import io.v47.encDecHwscan.Native
+import io.v47.encDecHwscan.bindings.EncDecHwscan
+import org.graalvm.nativeimage.hosted.Feature
+import org.graalvm.nativeimage.hosted.Feature.DuringSetupAccess
+import org.graalvm.nativeimage.hosted.RuntimeForeignAccess
 
-@QuarkusTest
-class ScanDevicesTest {
-    @Test
-    fun `it should return scanned devices`() {
-        val devices = RestAssured
-            .get("/devices")
-            .then()
-            .assertThat()
-            .statusCode(HttpStatus.SC_OK)
-            .extract()
-            .body()
-            .`as`(ScannedDevices::class.java)
-            .devices
+@Suppress("unused")
+internal class EncDecHwscanFeature : Feature {
+    override fun duringSetup(access: DuringSetupAccess) {
+        Native.load()
 
-        println(devices)
+        RuntimeForeignAccess.registerForDowncall(EncDecHwscan.`scan_devices$descriptor`())
+        RuntimeForeignAccess.registerForDowncall(EncDecHwscan.`free_devices$descriptor`())
     }
 }

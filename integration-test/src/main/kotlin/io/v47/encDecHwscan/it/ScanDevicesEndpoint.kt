@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2024 Media Server 47 Authors
+ * Copyright (C) 2024 Alex Katlein <dev@vemilyus.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,12 @@ package io.v47.encDecHwscan.it
 import io.quarkus.runtime.annotations.RegisterForReflection
 import io.v47.encDecHwscan.model.Device
 import io.v47.encDecHwscan.scanDevices
-import io.v47.utils.Constants
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 
-@Path(Constants.Api.V1 + "/devices")
+@Path("/devices")
 @Produces(MediaType.APPLICATION_JSON)
 class ScanDevicesEndpoint {
     @GET

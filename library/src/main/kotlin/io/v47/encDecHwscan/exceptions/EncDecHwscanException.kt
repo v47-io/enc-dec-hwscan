@@ -14,27 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.v47.encDecHwscan.it
+package io.v47.encDecHwscan.exceptions
 
-import io.quarkus.test.junit.QuarkusTest
-import io.restassured.RestAssured
-import org.apache.http.HttpStatus
-import org.junit.jupiter.api.Test
+sealed class EncDecHwscanException(message: String? = null) : Exception(message)
 
-@QuarkusTest
-class ScanDevicesTest {
-    @Test
-    fun `it should return scanned devices`() {
-        val devices = RestAssured
-            .get("/devices")
-            .then()
-            .assertThat()
-            .statusCode(HttpStatus.SC_OK)
-            .extract()
-            .body()
-            .`as`(ScannedDevices::class.java)
-            .devices
-
-        println(devices)
-    }
-}
+class CriticalErrorException : EncDecHwscanException()
+class DriverFailureException : EncDecHwscanException()
+class OperationFailedException : EncDecHwscanException()
+class ConversionFailedException : EncDecHwscanException()
+class UnrecognizedErrorException(errno: Int) : EncDecHwscanException("Unknown error: $errno")

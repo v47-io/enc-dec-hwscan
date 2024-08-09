@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2024 Alex Katlein <dev@vemilyus.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,27 +14,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.v47.encDecHwscan.it
+use std::{mem, ptr};
 
-import io.quarkus.test.junit.QuarkusTest
-import io.restassured.RestAssured
-import org.apache.http.HttpStatus
-import org.junit.jupiter.api.Test
+pub fn vec_to_ptr<T>(mut values: Vec<T>) -> (*mut T, u32) {
+    if values.is_empty() {
+        return (ptr::null_mut(), 0);
+    }
 
-@QuarkusTest
-class ScanDevicesTest {
-    @Test
-    fun `it should return scanned devices`() {
-        val devices = RestAssured
-            .get("/devices")
-            .then()
-            .assertThat()
-            .statusCode(HttpStatus.SC_OK)
-            .extract()
-            .body()
-            .`as`(ScannedDevices::class.java)
-            .devices
+    values.shrink_to_fit();
 
-        println(devices)
+    let len = values.len();
+    let ptr = values.as_mut_ptr();
+
+    mem::forget(values);
+
+    (ptr, len as u32)
+}
+
+pub fn drop_vec<T>(ptr: *mut T, len: u32) {
+    unsafe {
+        let _ = Vec::from_raw_parts(ptr, len as usize, len as usize);
     }
 }

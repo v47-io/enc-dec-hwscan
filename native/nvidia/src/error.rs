@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2024 Alex Katlein <dev@vemilyus.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,27 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.v47.encDecHwscan.it
+use std::ffi::c_uint;
+use std::num::TryFromIntError;
 
-import io.quarkus.test.junit.QuarkusTest
-import io.restassured.RestAssured
-import org.apache.http.HttpStatus
-import org.junit.jupiter.api.Test
+use thiserror::Error;
 
-@QuarkusTest
-class ScanDevicesTest {
-    @Test
-    fun `it should return scanned devices`() {
-        val devices = RestAssured
-            .get("/devices")
-            .then()
-            .assertThat()
-            .statusCode(HttpStatus.SC_OK)
-            .extract()
-            .body()
-            .`as`(ScannedDevices::class.java)
-            .devices
-
-        println(devices)
-    }
+#[derive(Error, Debug)]
+pub enum NvidiaError {
+    #[error("Nvidia driver not available: {0}")]
+    NotLoaded(#[from] &'static libloading::Error),
+    #[error("Operation failed: {0}")]
+    OperationFailed(c_uint),
+    #[error("Symbol not found in library: {0}")]
+    SymbolNotFound(&'static str),
+    #[error("NvEncodeAPI isn't providing function {0}")]
+    NvEncFunctionNotAvailable(&'static str),
+    #[error("Failed to convert GUID to Uuid: {0}")]
+    FailedToConvertUuid(#[from] uuid::Error),
+    #[error("Failed to convert result value: {0}")]
+    FailedToConvertResult(#[from] TryFromIntError),
 }

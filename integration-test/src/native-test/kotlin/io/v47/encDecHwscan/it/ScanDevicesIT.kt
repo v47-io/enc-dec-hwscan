@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2024 Media Server 47 Authors
+ * Copyright (C) 2024 Alex Katlein <dev@vemilyus.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -14,27 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.v47.encDecHwscan.it
+package io.v47.encDecHwscan
 
-import io.quarkus.test.junit.QuarkusTest
-import io.restassured.RestAssured
-import org.apache.http.HttpStatus
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle
 
-@QuarkusTest
+@TestInstance(Lifecycle.PER_CLASS)
 class ScanDevicesTest {
-    @Test
-    fun `it should return scanned devices`() {
-        val devices = RestAssured
-            .get("/devices")
-            .then()
-            .assertThat()
-            .statusCode(HttpStatus.SC_OK)
-            .extract()
-            .body()
-            .`as`(ScannedDevices::class.java)
-            .devices
+    @BeforeAll
+    fun init() {
+        Native.load()
+    }
 
-        println(devices)
+    @Test
+    fun `it should return a list of devices`() {
+        val list = scanDevices()
+
+        println(list)
     }
 }

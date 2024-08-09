@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2024 Alex Katlein <dev@vemilyus.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,27 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package io.v47.encDecHwscan.it
+extern crate cbindgen;
 
-import io.quarkus.test.junit.QuarkusTest
-import io.restassured.RestAssured
-import org.apache.http.HttpStatus
-import org.junit.jupiter.api.Test
+use cbindgen::Language;
+use std::env;
 
-@QuarkusTest
-class ScanDevicesTest {
-    @Test
-    fun `it should return scanned devices`() {
-        val devices = RestAssured
-            .get("/devices")
-            .then()
-            .assertThat()
-            .statusCode(HttpStatus.SC_OK)
-            .extract()
-            .body()
-            .`as`(ScannedDevices::class.java)
-            .devices
+fn main() {
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-        println(devices)
-    }
+    cbindgen::Builder::new()
+        .with_crate(crate_dir)
+        .with_parse_deps(true)
+        .with_parse_include(&["common"])
+        .with_language(Language::C)
+        .with_cpp_compat(false)
+        .with_no_includes()
+        .with_sys_include("stdint.h")
+        .generate()
+        .expect("Unable to generate C headers")
+        .write_to_file("target/enc-dec-hwscan.h");
 }

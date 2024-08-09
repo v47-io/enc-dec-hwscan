@@ -1,0 +1,19 @@
+[versions]
+native-image = "24.0.1"
+quarkus = "3.12.0"
+yanl = "0.8.1"
+
+[libraries]
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
+native-image-svm = { module = "org.graalvm.nativeimage:svm", version.ref = "native-image" }
+quarkus-arc = { module = "io.quarkus:quarkus-arc" }
+quarkus-arc-deployment = { module = "io.quarkus:quarkus-arc-deployment" }
+quarkus-bom = { module = "io.quarkus.platform:quarkus-bom", version.ref = "quarkus" }
+quarkus-core = { module = "io.quarkus:quarkus-core" }
+quarkus-core-deployment = { module = "io.quarkus:quarkus-core-deployment" }
+quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
+quarkus-rest-kotlin = { module = "io.quarkus:quarkus-rest-kotlin" }
+quarkus-junit5 = { module = "io.quarkus:quarkus-junit5" }
+rest-assured = { module = "io.rest-assured:rest-assured" }
+yanl = { module = "fr.stardustenterprises:yanl", version.ref = "yanl" }
