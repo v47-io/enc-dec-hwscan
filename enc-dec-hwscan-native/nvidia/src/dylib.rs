@@ -129,6 +129,21 @@ macro_rules! get_sym {
     }};
 }
 
+#[macro_export]
+#[allow(clippy::crate_in_macro_def)]
+macro_rules! get_sym_opt {
+    ($lib_var:expr, $sym_name:ident) => {{
+        use crate::NvidiaError;
+
+        unsafe {
+            match $lib_var.get::<$sym_name>(stringify!($sym_name).as_bytes()) {
+                Ok(sym) => Some(sym),
+                Err(_) => None
+            }
+        }
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

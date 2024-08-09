@@ -36,8 +36,8 @@ mod dylib_types {
     pub type NvEncodeAPICreateInstance = unsafe extern fn(*mut NV_ENCODE_API_FUNCTION_LIST) -> NVENCSTATUS;
 }
 
-const NVENCAPI_MAJOR_VERSION: u32 = 12;
-const NVENCAPI_MINOR_VERSION: u32 = 2;
+const NVENCAPI_MAJOR_VERSION: u32 = 7;
+const NVENCAPI_MINOR_VERSION: u32 = 0;
 
 const NVENCAPI_VERSION: u32 = NVENCAPI_MAJOR_VERSION | (NVENCAPI_MINOR_VERSION << 24);
 

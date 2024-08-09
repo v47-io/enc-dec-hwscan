@@ -21,11 +21,11 @@ use uuid::Uuid;
 
 use dylib_types::*;
 
-use crate::{call_cuda_sym, get_sym};
 use crate::dylib::{ensure_available, Libs};
-use crate::NvidiaError;
 pub use crate::sys::libcuviddec_sys::CUdevice;
 use crate::sys::libcuviddec_sys::CUuuid;
+use crate::NvidiaError;
+use crate::{call_cuda_sym, get_sym};
 
 #[allow(non_camel_case_types, dead_code)]
 mod dylib_types {
@@ -52,7 +52,7 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
     let sym_cu_device_get = get_sym!(lib_cuda, cuDeviceGet);
     let sym_cu_device_get_count = get_sym!(lib_cuda, cuDeviceGetCount);
     let sym_cu_device_get_name = get_sym!(lib_cuda, cuDeviceGetName);
-    let sym_cu_device_get_uuid = get_sym!(lib_cuda, cuDeviceGetUuid);
+    let sym_cu_device_get_uuid = get_sym_opt!(lib_cuda, cuDeviceGetUuid);
 
     let mut devices = Vec::new();
 
@@ -71,24 +71,28 @@ pub fn enumerate_devices() -> Result<Vec<CudaDevice>, NvidiaError> {
         call_cuda_sym!(
             sym_cu_device_get_name(
                 cu_name_buffer.as_ptr() as *mut c_char, 
-                cu_name_buffer.len().try_into().unwrap(), 
+                cu_name_buffer.len().try_into()?,
                 cu_device
             )
         );
 
         let cu_name_raw = CStr::from_bytes_until_nul(&cu_name_buffer).unwrap();
 
-        let mut cu_uuid_buffer: CUuuid = unsafe { zeroed() };
-        call_cuda_sym!(sym_cu_device_get_uuid(&mut cu_uuid_buffer, cu_device));
+        let uuid = if let Some(sym_cu_device_get_uuid) = &sym_cu_device_get_uuid {
+            let mut cu_uuid_buffer: CUuuid = unsafe { zeroed() };
+            call_cuda_sym!(sym_cu_device_get_uuid(&mut cu_uuid_buffer, cu_device));
 
-        let uuid = Uuid::from_slice(
-            unsafe {
-                std::slice::from_raw_parts(
-                    cu_uuid_buffer.bytes.as_ptr() as *const u8,
-                    16,
-                )
-            }
-        ).unwrap();
+            Uuid::from_slice(
+                unsafe {
+                    std::slice::from_raw_parts(
+                        cu_uuid_buffer.bytes.as_ptr() as *const u8,
+                        16,
+                    )
+                }
+            )?
+        } else {
+            Uuid::nil()
+        };
 
         devices.push(
             CudaDevice {
