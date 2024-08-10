@@ -14,10 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-use std::ffi::{c_char, CString};
-use std::{mem, ptr};
-
 use crate::utils::{drop_vec, vec_to_ptr};
+use indenter::indented;
+use std::ffi::{c_char, CStr, CString};
+use std::fmt::{Debug, Formatter, Write};
+use std::ptr::slice_from_raw_parts_mut;
+use std::{mem, ptr};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -70,7 +72,7 @@ pub enum EncodeProfile {
 }
 
 #[repr(C)]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct CodecDetails {
     codec: Codec,
     decoding_specs: *mut DecodingSpec,
@@ -158,6 +160,53 @@ impl Drop for CodecDetails {
     }
 }
 
+impl Debug for CodecDetails {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "CodecDetails {{")?;
+        writeln!(f, "  codec: {:?},", self.codec)?;
+
+        write!(f, "  decoding_specs: ")?;
+
+        if self.num_decoding_specs > 0 {
+            writeln!(f, "[")?;
+
+            let slice = unsafe {
+                slice_from_raw_parts_mut(self.decoding_specs, self.num_decoding_specs as usize).as_ref().unwrap()
+            };
+
+            for decoding_spec in slice.iter() {
+                writeln!(indented(f).with_str("    "), "{:?}", decoding_spec)?;
+            }
+
+            writeln!(f, "  ],")?;
+        } else {
+            writeln!(f, "[],")?;
+        }
+
+        write!(f, "  encoding_specs: ")?;
+
+        if self.num_encoding_specs > 0 {
+            writeln!(f, "[")?;
+
+            let slice = unsafe {
+                slice_from_raw_parts_mut(self.encoding_specs, self.num_encoding_specs as usize).as_ref().unwrap()
+            };
+
+            for encoding_spec in slice.iter() {
+                writeln!(indented(f).with_str("    "), "{:?},", encoding_spec)?;
+            }
+
+            writeln!(f, "  ]")?;
+        } else {
+            writeln!(f, "[]")?;
+        }
+
+        write!(f, "}}")?;
+
+        Ok(())
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DecodingSpec {
@@ -197,7 +246,7 @@ impl From<bool> for ThreeValue {
 }
 
 #[repr(C)]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Device {
     driver: Driver,
     ordinal: u8,
@@ -268,8 +317,53 @@ impl Drop for Device {
     }
 }
 
+impl Debug for Device {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Device {{")?;
+        writeln!(f, "  driver: {:?},", self.driver)?;
+        writeln!(f, "  ordinal: {},", self.ordinal)?;
+        write!(f, "  path: ")?;
+
+        if self.path != ptr::null_mut() {
+            writeln!(f, "{:?},", unsafe { CStr::from_ptr(self.path as *const c_char) })?;
+        } else {
+            writeln!(f, "null,")?;
+        }
+
+        write!(f, "  name: ")?;
+
+        if self.name != ptr::null_mut() {
+            writeln!(f, "{:?},", unsafe { CStr::from_ptr(self.name as *const c_char) })?;
+        } else {
+            writeln!(f, "null,")?;
+        }
+
+        write!(f, "  codecs: ")?;
+
+        if self.num_codecs > 0 {
+            writeln!(f, "[")?;
+
+            let slice = unsafe {
+                slice_from_raw_parts_mut(self.codecs, self.num_codecs as usize).as_ref().unwrap()
+            };
+
+            for codec in slice.iter() {
+                writeln!(indented(f).with_str("    "), "{:?},", codec)?;
+            }
+
+            writeln!(f, "  ]")?;
+        } else {
+            writeln!(f, "[]")?;
+        }
+
+        write!(f, "}}")?;
+
+        Ok(())
+    }
+}
+
 #[repr(C)]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct EncDecDevices {
     devices: *mut Device,
     num_devices: u32,
@@ -291,5 +385,32 @@ impl Drop for EncDecDevices {
         if self.num_devices > 0 {
             drop_vec(self.devices, self.num_devices);
         }
+    }
+}
+
+impl Debug for EncDecDevices {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "EncDecDevices {{")?;
+        write!(f, "  devices: ")?;
+
+        if self.num_devices > 0 {
+            writeln!(f, "[")?;
+
+            let slice = unsafe {
+                slice_from_raw_parts_mut(self.devices, self.num_devices as usize).as_ref().unwrap()
+            };
+
+            for dev in slice.iter() {
+                writeln!(indented(f).with_str("    "), "{:?},", dev)?;
+            }
+
+            writeln!(f, "  ]")?;
+        } else {
+            writeln!(f, "[]")?;
+        }
+
+        writeln!(f, "}}")?;
+
+        Ok(())
     }
 }
