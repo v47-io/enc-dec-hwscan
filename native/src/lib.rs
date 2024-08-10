@@ -16,9 +16,9 @@
  */
 use std::panic::catch_unwind;
 
-pub use common::*;
 use ::nvidia::NvidiaError;
 use ::vaapi::VaError;
+pub use common::*;
 
 use crate::error::ErrorCode;
 use crate::nvidia::get_nvidia_devices;

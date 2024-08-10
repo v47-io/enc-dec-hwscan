@@ -1,11 +1,11 @@
 # Encode/Decode Hardware Scan
 
-An library illustrating the use of Rust, Java 22's Foreign Function and Memory API, Quarkus,
+A library illustrating the use of Kotlin, Rust, Java 22's Foreign Function and Memory API, Quarkus,
 and GraalVM Native Image to provide a focused development experience when targeting a singular
 platform (x86_64 Linux).
 
 Using Java 22 makes it possible to provide a simple native interface without the usual JNI cruft.
-This results in a native library that can be used outside of the confines of this project like
+This results in a native library that can be used outside the confines of this project like
 any other shared library.
 
 Currently implemented are support for `CUDA >= 5.0` and `NvEnc >= 7.0` to retrieve information
