@@ -43,10 +43,5 @@ tasks.quarkusBuild {
                 "--enable-native-access=ALL-UNNAMED"
             ).joinToString(",")
         )
-
-        put(
-            "builder-image",
-            "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:24.0-jdk-22"
-        )
     }
 }
