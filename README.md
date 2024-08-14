@@ -55,6 +55,8 @@ Example output:
 
 - Linux (no Windows or macos)
 - Mandrel or Liberica NIK 24.r22 (JDK 22, for `native-image`)
+- [Jextract](https://jdk.java.net/jextract/)
+- Clang
 - Rust 2021 Edition
 - `cuda.h` in `/usr/include` (get it from [Cuda Toolkit][cuda-tk])
 - VA-API:
