@@ -32,7 +32,9 @@ pub fn vec_to_ptr<T>(mut values: Vec<T>) -> (*mut T, u32) {
 }
 
 pub fn drop_vec<T>(ptr: *mut T, len: u32) {
-    unsafe {
-        let _ = Vec::from_raw_parts(ptr, len as usize, len as usize);
+    if !ptr.is_null() {
+        unsafe {
+            let _ = Vec::from_raw_parts(ptr, len as usize, len as usize);
+        }
     }
 }

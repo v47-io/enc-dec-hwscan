@@ -124,18 +124,25 @@ impl CodecDetails {
         self.codec
     }
 
-    pub unsafe fn into_raw_decoding_specs(self) -> (*mut DecodingSpec, u32) {
+    /// # Safety
+    ///
+    /// May lead to memory leaks if encoding_specs exist
+    unsafe fn into_raw_decoding_specs(self) -> (*mut DecodingSpec, u32) {
         let Self {
             decoding_specs,
             num_decoding_specs,
             ..
         } = self;
+
         mem::forget(self);
 
         (decoding_specs, num_decoding_specs)
     }
 
-    pub unsafe fn into_raw_encoding_specs(self) -> (*mut EncodingSpec, u32) {
+    /// # Safety
+    ///
+    /// May lead to memory leaks if decoding_specs exist
+    unsafe fn into_raw_encoding_specs(self) -> (*mut EncodingSpec, u32) {
         let Self {
             encoding_specs,
             num_encoding_specs,
@@ -149,13 +156,8 @@ impl CodecDetails {
 
 impl Drop for CodecDetails {
     fn drop(&mut self) {
-        if self.num_decoding_specs > 0 {
-            drop_vec(self.decoding_specs, self.num_decoding_specs);
-        }
-
-        if self.num_encoding_specs > 0 {
-            drop_vec(self.encoding_specs, self.num_encoding_specs);
-        }
+        drop_vec(self.decoding_specs, self.num_decoding_specs);
+        drop_vec(self.encoding_specs, self.num_encoding_specs);
     }
 }
 
@@ -291,9 +293,7 @@ impl Device {
             driver,
             ordinal: 0,
             path: path.into_raw() as *mut c_char,
-            name: name
-                .map(|it| it.into_raw())
-                .unwrap_or_else(|| ptr::null_mut()),
+            name: name.map(|it| it.into_raw()).unwrap_or(ptr::null_mut()),
             codecs,
             num_codecs,
         }
@@ -303,18 +303,16 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
-            if self.path != ptr::null_mut() {
+            if !self.path.is_null() {
                 let _ = CString::from_raw(self.path as *mut c_char);
             }
 
-            if self.name != ptr::null_mut() {
+            if !self.name.is_null() {
                 let _ = CString::from_raw(self.name as *mut c_char);
             }
         }
 
-        if self.num_codecs > 0 {
-            drop_vec(self.codecs, self.num_codecs);
-        }
+        drop_vec(self.codecs, self.num_codecs);
     }
 }
 
@@ -325,7 +323,7 @@ impl Debug for Device {
         writeln!(f, "  ordinal: {},", self.ordinal)?;
         write!(f, "  path: ")?;
 
-        if self.path != ptr::null_mut() {
+        if !self.path.is_null() {
             let str = unsafe { CStr::from_ptr(self.path as *const c_char) };
             writeln!(f, "{:?},", str)?;
         } else {
@@ -334,7 +332,7 @@ impl Debug for Device {
 
         write!(f, "  name: ")?;
 
-        if self.name != ptr::null_mut() {
+        if !self.name.is_null() {
             let str = unsafe { CStr::from_ptr(self.name as *const c_char) };
             writeln!(f, "{:?},", str)?;
         } else {
@@ -371,9 +369,7 @@ impl EncDecDevices {
 
 impl Drop for EncDecDevices {
     fn drop(&mut self) {
-        if self.num_devices > 0 {
-            drop_vec(self.devices, self.num_devices);
-        }
+        drop_vec(self.devices, self.num_devices);
     }
 }
 

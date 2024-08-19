@@ -130,8 +130,8 @@ pub fn get_capabilities(display: &DrmDisplay) -> Result<Vec<CodecDetails>, VaErr
             } else {
                 Some(CodecDetails::new(
                     *codec,
-                    decode_caps.unwrap_or_else(|| vec![]),
-                    encode_caps.unwrap_or_else(|| vec![]),
+                    decode_caps.unwrap_or_default(),
+                    encode_caps.unwrap_or_default(),
                 ))
             }
         })
@@ -400,7 +400,7 @@ mod tests {
             return Ok(());
         }
 
-        let drm_display = DrmDisplay::new(devices.get(0).unwrap())?;
+        let drm_display = DrmDisplay::new(devices.first().unwrap())?;
 
         println!("Found device: {}", &drm_display.vendor);
         dbg!(&drm_display);

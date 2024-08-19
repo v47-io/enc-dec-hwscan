@@ -16,9 +16,9 @@
  */
 use std::panic::catch_unwind;
 
+pub use common::*;
 use ::nvidia::NvidiaError;
 use ::vaapi::VaError;
-pub use common::*;
 
 use crate::error::ErrorCode;
 use crate::nvidia::get_nvidia_devices;
@@ -28,11 +28,17 @@ mod error;
 mod nvidia;
 mod vaapi;
 
+/// # Safety
+///
+/// Part of the public C interface.
 #[no_mangle]
 pub unsafe extern "C" fn free_devices(ptr: *mut EncDecDevices) {
     let _ = Box::from_raw(ptr);
 }
 
+/// # Safety
+///
+/// Part of the public C interface.
 #[no_mangle]
 pub unsafe extern "C" fn scan_devices(result: *mut *mut EncDecDevices) -> ErrorCode {
     catch_unwind(|| {
@@ -42,7 +48,7 @@ pub unsafe extern "C" fn scan_devices(result: *mut *mut EncDecDevices) -> ErrorC
                 if let NvidiaError::NotLoaded(_) = err {
                     (vec![], false)
                 } else {
-                    eprintln!("enc-dec-hwscan error: {}", err.to_string());
+                    eprintln!("enc-dec-hwscan error: {}", err);
                     return map_nvidia_error_code(err);
                 }
             }
@@ -54,16 +60,13 @@ pub unsafe extern "C" fn scan_devices(result: *mut *mut EncDecDevices) -> ErrorC
                 if let VaError::NotLoaded(_) = err {
                     vec![]
                 } else {
-                    eprintln!("enc-dec-hwscan error: {}", err.to_string());
+                    eprintln!("enc-dec-hwscan error: {}", err);
                     return map_vaapi_error_code(err);
                 }
             }
         };
 
-        let all_devices = nvidia_devices
-            .into_iter()
-            .chain(vaapi_devices.into_iter())
-            .collect();
+        let all_devices = nvidia_devices.into_iter().chain(vaapi_devices).collect();
 
         // make sure this is done last and only if errno is going to be 0
         *result = Box::into_raw(Box::new(EncDecDevices::new(all_devices)));

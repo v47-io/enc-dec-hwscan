@@ -6,5 +6,4 @@ authors = ["Alex Katlein <dev@vemilyus.com>"]
 
 [dependencies]
 indenter = "0.3.3"
-thiserror = "^1.0.61"
 uuid = "^1.8.0"

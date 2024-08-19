@@ -163,7 +163,7 @@ mod tests {
         let devices = enumerate_devices()?;
         assert!(!devices.is_empty());
 
-        let context = CudaContext::new(devices.get(0).unwrap())?;
+        let context = CudaContext::new(devices.first().unwrap())?;
 
         context.with_floating_ctx(|context| {
             let encoder = NvEncoder::new(context)?;

@@ -75,7 +75,7 @@ impl<'a> CudaContext<'a> {
 
         Ok(Self {
             context: Mutex::new(UnsafeCell::new(cu_context)),
-            phantom: PhantomData::default(),
+            phantom: PhantomData,
         })
     }
 
@@ -167,7 +167,7 @@ mod tests {
         let devices = enumerate_devices()?;
         assert!(!devices.is_empty());
 
-        let context = CudaContext::new(devices.get(0).unwrap())?;
+        let context = CudaContext::new(devices.first().unwrap())?;
 
         context.with_ctx(|| {
             println!("We are using a CUcontext here");

@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Alex Katlein <dev@vemilyus.com>"]
 
 [build-dependencies]
-bindgen = "^0.69.4"
+bindgen = "^0.70.0"
 
 [dependencies]
 common = { path = "../common" }

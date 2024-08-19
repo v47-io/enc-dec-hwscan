@@ -19,7 +19,7 @@ use std::ffi::{c_int, c_uint, CStr};
 use std::fs::{File, OpenOptions};
 use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
-use std::{ptr, slice};
+use std::slice;
 
 use libloading::Symbol;
 
@@ -126,7 +126,7 @@ impl DrmDisplay {
         let sym_va_get_display_drm = get_sym!(libva_drm, vaGetDisplayDRM);
         let va_display = unsafe { sym_va_get_display_drm(drm_file.as_raw_fd()) };
 
-        if va_display == ptr::null_mut() {
+        if va_display.is_null() {
             Err(VaError::FailedToGetDisplay(device_path.to_path_buf()))
         } else {
             let sym_va_initialize = get_sym!(libva, vaInitialize);
@@ -141,7 +141,7 @@ impl DrmDisplay {
 
             let sym_va_query_vendor_string = get_sym!(libva, vaQueryVendorString);
             let vendor_string = unsafe { sym_va_query_vendor_string(va_display) };
-            let vendor = if vendor_string == ptr::null() {
+            let vendor = if vendor_string.is_null() {
                 String::new()
             } else {
                 unsafe { CStr::from_ptr(vendor_string) }
@@ -219,7 +219,7 @@ impl DrmDisplay {
     ) -> Result<Vec<VAConfigAttrib>, VaError> {
         /*let max_num_config_attributes = call_sym!(self, va_max_num_config_attributes());
         if max_num_config_attributes < 0 {
-            return Err(VaError::OperationFailedT("vaMaxNumConfigAttributes returned a negative value".to_string(), -1));
+            return Err(VaError::OperationFailed("vaMaxNumConfigAttributes returned a negative value".to_string(), -1));
         }
 
         let max_num_config_attributes = max_num_config_attributes as usize;*/
@@ -233,9 +233,10 @@ impl DrmDisplay {
         let array_ptr = alloc_array::<VAConfigAttrib>(max_num_config_attributes);
         let array_slice =
             unsafe { slice::from_raw_parts_mut(array_ptr, max_num_config_attributes) };
+
         for (i, raw_item) in array_slice.iter_mut().enumerate() {
-            (*raw_item).type_ = i as c_uint;
-            (*raw_item).value = VA_ATTRIB_NOT_SUPPORTED;
+            raw_item.type_ = i as c_uint;
+            raw_item.value = VA_ATTRIB_NOT_SUPPORTED;
         }
 
         varesult_call_sym!(
@@ -267,7 +268,7 @@ fn realloc_array<T: Sized>(array_ptr: *mut T, num_items: usize, max_size: usize)
 
     unsafe {
         let result = realloc(array_ptr as *mut u8, max_layout, new_layout.size()) as *mut T;
-        if result == ptr::null_mut() {
+        if result.is_null() {
             array_ptr
         } else {
             result
@@ -299,7 +300,7 @@ mod tests {
             return Ok(());
         }
 
-        let drm_display = DrmDisplay::new(devices.get(0).unwrap())?;
+        let drm_display = DrmDisplay::new(devices.first().unwrap())?;
 
         println!("Found device: {}", &drm_display.vendor);
         dbg!(&drm_display);
@@ -320,7 +321,7 @@ mod tests {
             return Ok(());
         }
 
-        let drm_display = DrmDisplay::new(devices.get(0).unwrap())?;
+        let drm_display = DrmDisplay::new(devices.first().unwrap())?;
 
         dbg!(&drm_display);
 

@@ -16,7 +16,6 @@
  */
 use std::ffi::CStr;
 use std::path::PathBuf;
-use std::ptr;
 use std::sync::OnceLock;
 
 use libloading::Symbol;
@@ -64,7 +63,7 @@ impl VaError {
             })(status)
         };
 
-        if result_ptr == ptr::null() {
+        if result_ptr.is_null() {
             Ok(VaError::OperationFailed(
                 "unknown error".to_string(),
                 status,

@@ -9,7 +9,7 @@ authors = ["Alex Katlein <dev@vemilyus.com>"]
 edition = "2021"
 
 [build-dependencies]
-cbindgen = "^0.26.0"
+cbindgen = "^0.27.0"
 
 [dependencies]
 common = { path = "./common" }

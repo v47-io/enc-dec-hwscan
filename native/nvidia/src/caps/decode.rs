@@ -97,7 +97,7 @@ pub fn get_decode_capabilities(specs: &[CudaDecodeSpec]) -> Result<Vec<CodecDeta
 
     let mut result: HashMap<Codec, Vec<DecodingSpec>> = HashMap::new();
 
-    for spec in specs.into_iter() {
+    for spec in specs.iter() {
         let mut cuvid_decode_caps: CUVIDDECODECAPS = unsafe { zeroed() };
         cuvid_decode_caps.eCodecType = spec.codec_type;
         cuvid_decode_caps.eChromaFormat = spec.chroma_format;
@@ -178,7 +178,7 @@ mod tests {
         let devices = enumerate_devices()?;
         assert!(!devices.is_empty());
 
-        let context = CudaContext::new(devices.get(0).unwrap())?;
+        let context = CudaContext::new(devices.first().unwrap())?;
 
         let caps = context.with_ctx(|| get_decode_capabilities(&CudaDecodeSpec::all()))?;
 

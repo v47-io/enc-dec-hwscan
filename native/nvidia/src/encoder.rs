@@ -48,7 +48,7 @@ pub const fn nvencapi_struct_version(version: u32) -> u32 {
     NVENCAPI_VERSION | (version << 16) | (0x7 << 28)
 }
 
-fn encode_api<'a>() -> Result<NV_ENCODE_API_FUNCTION_LIST, NvidiaError> {
+fn encode_api() -> Result<NV_ENCODE_API_FUNCTION_LIST, NvidiaError> {
     let Libs { lib_nv_encode, .. } = ensure_available()?;
     let sym_nv_encode_api_create_instance = get_sym!(lib_nv_encode, NvEncodeAPICreateInstance);
 
@@ -153,7 +153,7 @@ impl<'a> NvEncoder<'a> {
             nvEncGetEncodeGUIDs(guids_ptr, guid_count, &mut guid_count)
         );
 
-        Ok(make_uuid_vec(guids_ptr, guid_count as usize)?)
+        make_uuid_vec(guids_ptr, guid_count as usize)
     }
 
     pub fn get_encode_profile_guids(&self, codec_guid: &Uuid) -> Result<Vec<Uuid>, NvidiaError> {
@@ -169,7 +169,7 @@ impl<'a> NvEncoder<'a> {
             nvEncGetEncodeProfileGUIDs(codec_guid.into(), guids_ptr, guid_count, &mut guid_count)
         );
 
-        Ok(make_uuid_vec(guids_ptr, guid_count as usize)?)
+        make_uuid_vec(guids_ptr, guid_count as usize)
     }
 
     pub fn get_encode_caps(&self, codec_guid: &Uuid, cap: u32) -> Result<i32, NvidiaError> {
@@ -309,7 +309,7 @@ mod tests {
         let devices = enumerate_devices()?;
         assert!(!devices.is_empty());
 
-        let context = CudaContext::new(devices.get(0).unwrap())?;
+        let context = CudaContext::new(devices.first().unwrap())?;
 
         context.with_floating_ctx(|context| {
             let encoder = NvEncoder::new(context)?;
@@ -319,7 +319,7 @@ mod tests {
             assert!(!encode_guids.is_empty());
 
             let encode_profile_guids =
-                encoder.get_encode_profile_guids(encode_guids.get(0).unwrap())?;
+                encoder.get_encode_profile_guids(encode_guids.first().unwrap())?;
 
             dbg!(&encode_profile_guids);
             assert!(!encode_profile_guids.is_empty());

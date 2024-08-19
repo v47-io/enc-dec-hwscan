@@ -77,6 +77,7 @@ macro_rules! varesult_call_sym {
 
         use crate::sys::va::VA_STATUS_SUCCESS;
 
+        #[allow(clippy::macro_metavars_in_unsafe)]
         let result = unsafe { $call };
         if result != VA_STATUS_SUCCESS as i32 {
             return Err(VaError::from_status(result.try_into().unwrap())?);
@@ -88,6 +89,8 @@ macro_rules! varesult_call_sym {
         use crate::sys::va::VA_STATUS_SUCCESS;
 
         let fun = &$self.symbols.$func;
+        
+        #[allow(clippy::macro_metavars_in_unsafe)]
         let result = unsafe { fun($self.va_display, $($arg),*) };
 
         if result != VA_STATUS_SUCCESS as i32 {

@@ -100,6 +100,7 @@ macro_rules! call_cuda_sym {
 
         use crate::sys::libcuviddec_sys::cudaError_enum_CUDA_SUCCESS;
 
+        #[allow(clippy::macro_metavars_in_unsafe)]
         let curesult = unsafe { $call };
         if curesult != cudaError_enum_CUDA_SUCCESS {
             return Err(NvidiaError::OperationFailed(curesult));
