@@ -27,9 +27,11 @@ import jakarta.ws.rs.core.MediaType
 @Path("/devices")
 @Produces(MediaType.APPLICATION_JSON)
 class ScanDevicesEndpoint {
+    val devices by lazy { scanDevices() }
+
     @GET
     fun getDevices() =
-        ScannedDevices(scanDevices())
+        ScannedDevices(devices)
 }
 
 @RegisterForReflection

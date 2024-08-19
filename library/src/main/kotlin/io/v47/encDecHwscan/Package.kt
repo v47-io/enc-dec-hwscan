@@ -16,6 +16,7 @@
  */
 package io.v47.encDecHwscan
 
+import io.v47.encDecHwscan.bindings.EncDecHwscan
 import io.v47.encDecHwscan.exceptions.ConversionFailedException
 import io.v47.encDecHwscan.exceptions.CriticalErrorException
 import io.v47.encDecHwscan.exceptions.DriverFailureException
@@ -121,13 +122,12 @@ private fun mapEncodingSpecs(encodingSpecs: MemorySegment, numEncodingSpecs: Int
         }
         .toList()
 
-@Suppress("MagicNumber")
 private fun mapException(errno: Int) =
     when (errno) {
-        -666 -> CriticalErrorException()
-        1 -> DriverFailureException()
-        2 -> OperationFailedException()
-        3 -> ConversionFailedException()
+        EncDecHwscan.CriticalError() -> CriticalErrorException()
+        EncDecHwscan.DriverFailure() -> DriverFailureException()
+        EncDecHwscan.OperationFailed() -> OperationFailedException()
+        EncDecHwscan.ConversionFailed() -> ConversionFailedException()
         else -> UnrecognizedErrorException(errno)
     }
 
@@ -152,5 +152,5 @@ private fun MemorySegment.strlen(): Int {
             return i
     }
 
-    throw IllegalArgumentException("No null terminator found")
+    throw IllegalArgumentException("No nul terminator found")
 }

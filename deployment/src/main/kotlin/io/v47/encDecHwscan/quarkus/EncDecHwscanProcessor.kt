@@ -16,13 +16,12 @@
  */
 package io.v47.encDecHwscan.quarkus
 
-import io.quarkus.arc.deployment.IgnoreSplitPackageBuildItem
 import io.quarkus.deployment.annotations.BuildStep
 import io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT
 import io.quarkus.deployment.annotations.Record
 import io.quarkus.deployment.builditem.FeatureBuildItem
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem
 import io.v47.encDecHwscan.quarkus.recorder.NativeLoadRecorder
 
 internal class EncDecHwscanProcessor {
@@ -33,15 +32,11 @@ internal class EncDecHwscanProcessor {
     fun nativeFeature() = NativeImageFeatureBuildItem("io.v47.encDecHwscan.svm.EncDecHwscanFeature")
 
     @BuildStep
-    fun nativeImageResources() = NativeImageResourceDirectoryBuildItem("META-INF/natives")
+    fun nativeImageResources() = NativeImageResourceBuildItem("META-INF/natives/linux/x86_64/libenc_dec_hwscan.so")
 
     @BuildStep
     @Record(RUNTIME_INIT)
     fun recordNativeLoad(recorder: NativeLoadRecorder) {
         recorder.load()
     }
-
-    @BuildStep
-    fun ignoreSplitPackages() =
-        IgnoreSplitPackageBuildItem(listOf("io.v47.encDecHwscan"))
 }

@@ -53,12 +53,12 @@ object Native {
 
     fun <T : Any> scanDevices(mapper: (MemorySegment) -> T) =
         Arena.ofConfined().use { arena ->
-            val target = arena.allocate(ValueLayout.ADDRESS.withoutTargetLayout())
-            val errno = SCAN_DEVICES_HANDLE.invokeExact(target) as Int
-
             var supportInfo: MemorySegment? = null
 
             try {
+                val target = arena.allocate(ValueLayout.ADDRESS.withoutTargetLayout())
+                val errno = SCAN_DEVICES_HANDLE.invokeExact(target) as Int
+
                 if (errno == 0) {
                     supportInfo = target
                         .get(ValueLayout.ADDRESS, 0L)
