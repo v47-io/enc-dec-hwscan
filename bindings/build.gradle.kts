@@ -2,8 +2,13 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.allopen")
 
-    id("fr.stardustenterprises.rust.importer")
-    id("io.github.krakowski.jextract")
+    alias(libs.plugins.jextract)
+    alias(libs.plugins.rust.importer)
+
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.dokka)
+
+    `maven-publish`
 }
 
 dependencies {
@@ -34,4 +39,15 @@ allOpen {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        named<MavenPublication>("maven") {
+            pom {
+                name.set("Encode/Decode Hardware Scan :: Bindings")
+                description.set("Native bindings and shared library for enc-dec-hwscan")
+            }
+        }
+    }
 }

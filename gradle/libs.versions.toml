@@ -1,6 +1,13 @@
 [versions]
+detekt = "1.23.6"
+dokka = "1.9.20"
+jextract = "0.5.0"
+license = "0.16.1"
 native-image = "24.0.1"
 quarkus = "3.12.0"
+release = "3.0.2"
+remal-gradle-plugins = "1.9.2"
+rust = "3.2.5"
 yanl = "0.8.1"
 
 [libraries]
@@ -15,5 +22,17 @@ quarkus-core-deployment = { module = "io.quarkus:quarkus-core-deployment" }
 quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
 quarkus-rest-kotlin = { module = "io.quarkus:quarkus-rest-kotlin" }
 quarkus-junit5 = { module = "io.quarkus:quarkus-junit5" }
+remalGradlePlugins = { module = "name.remal:gradle-plugins", version.ref = "remal-gradle-plugins" }
 rest-assured = { module = "io.rest-assured:rest-assured" }
 yanl = { module = "fr.stardustenterprises:yanl", version.ref = "yanl" }
+
+[plugins]
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+jextract = { id = "io.github.krakowski.jextract", version.ref = "jextract" }
+license = { id = "com.github.hierynomus.license", version.ref = "license" }
+quarkus = { id = "io.quarkus", version.ref = "quarkus" }
+quarkus-extension = { id = "io.quarkus.extension", version.ref = "quarkus" }
+release = { id = "net.researchgate.release", version.ref = "release" }
+rust-importer = { id = "fr.stardustenterprises.rust.importer", version.ref = "rust" }
+rust-wrapper = { id = "fr.stardustenterprises.rust.wrapper", version.ref = "rust" }

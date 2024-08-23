@@ -1,7 +1,7 @@
 import com.hierynomus.gradle.license.tasks.LicenseFormat
 
 plugins {
-    id("fr.stardustenterprises.rust.wrapper")
+    alias(libs.plugins.rust.wrapper)
 }
 
 rust {

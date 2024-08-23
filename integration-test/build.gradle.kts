@@ -3,13 +3,13 @@ plugins {
     kotlin("kapt")
     kotlin("plugin.allopen")
 
-    id("io.quarkus")
+    alias(libs.plugins.quarkus)
 }
 
 dependencies {
     implementation(platform(libs.quarkus.bom))
 
-    implementation(project(":library"))
+    implementation(project(":enc-dec-hwscan"))
 
     implementation(libs.quarkus.rest.jackson)
     implementation(libs.quarkus.rest.kotlin)
