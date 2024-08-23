@@ -18,8 +18,27 @@ package io.v47.encDecHwscan.exceptions
 
 sealed class EncDecHwscanException(message: String? = null) : Exception(message)
 
+/**
+ * Indicates an unexpected error occurred in the native library.
+ */
 class CriticalErrorException : EncDecHwscanException()
+
+/**
+ * Indicates that the native library was unable to query a device driver for information.
+ */
 class DriverFailureException : EncDecHwscanException()
+
+/**
+ * Indicates a generic operation failure in the native library.
+ */
 class OperationFailedException : EncDecHwscanException()
+
+/**
+ * Indicates a failure to convert the native representation to Kotlin/JVM types.
+ */
 class ConversionFailedException : EncDecHwscanException()
+
+/**
+ * Indicates that some other unrecognized error occurred in the native library.
+ */
 class UnrecognizedErrorException(errno: Int) : EncDecHwscanException("Unknown error: $errno")

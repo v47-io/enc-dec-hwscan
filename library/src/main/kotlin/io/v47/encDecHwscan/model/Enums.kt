@@ -20,6 +20,9 @@ package io.v47.encDecHwscan.model
 
 import io.v47.encDecHwscan.bindings.EncDecHwscan
 
+/**
+ * Specifies the recognized types of encoding/decoding device drivers.
+ */
 enum class Driver(private val nativeValue: Int) {
     Vaapi(EncDecHwscan.Vaapi()),
     Nvidia(EncDecHwscan.Nvidia());
@@ -29,6 +32,9 @@ enum class Driver(private val nativeValue: Int) {
     }
 }
 
+/**
+ * Specifies all recognized video codecs.
+ */
 enum class Codec(private val nativeValue: Int) {
     Mpeg1(EncDecHwscan.Mpeg1()),
     Mpeg2(EncDecHwscan.Mpeg2()),
@@ -45,6 +51,9 @@ enum class Codec(private val nativeValue: Int) {
     }
 }
 
+/**
+ * Specifies the recognized chroma formats.
+ */
 enum class Chroma(private val nativeValue: Int) {
     Monochrome(EncDecHwscan.Monochrome()),
     Yuv420(EncDecHwscan.Yuv420()),
@@ -56,6 +65,9 @@ enum class Chroma(private val nativeValue: Int) {
     }
 }
 
+/**
+ * Specifies the recognized color depths.
+ */
 enum class ColorDepth(private val nativeValue: Int) {
     Bit8(EncDecHwscan.Bit8()),
     Bit10(EncDecHwscan.Bit10()),
@@ -66,6 +78,9 @@ enum class ColorDepth(private val nativeValue: Int) {
     }
 }
 
+/**
+ * Specifies the recognized encoding profiles.
+ */
 enum class EncodeProfile(private val nativeValue: Int) {
     Baseline(EncDecHwscan.Baseline()),
     Main(EncDecHwscan.Main()),

@@ -40,6 +40,9 @@ import io.v47.encDecHwscan.bindings.Device as RsDevice
 import io.v47.encDecHwscan.bindings.EncDecDevices as RsEncDecDevices
 import io.v47.encDecHwscan.bindings.EncodingSpec as RsEncodingSpec
 
+/**
+ * Returns a list of devices and their capabilities.
+ */
 fun scanDevices(): List<Device> {
     val (result, errno) =
         Native.scanDevices { memorySegment ->

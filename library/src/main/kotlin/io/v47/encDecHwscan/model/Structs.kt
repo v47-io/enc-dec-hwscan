@@ -20,6 +20,9 @@ import com.fasterxml.jackson.annotation.JsonAlias
 import io.quarkus.runtime.annotations.RegisterForReflection
 import java.nio.file.Path
 
+/**
+ * Contains detailed information about decoding capabilities.
+ */
 @RegisterForReflection
 data class DecodingSpec(
     val chroma: Chroma,
@@ -28,6 +31,9 @@ data class DecodingSpec(
     val maxHeight: Int
 )
 
+/**
+ * Contains detailed information about encoding capabilities.
+ */
 @RegisterForReflection
 data class EncodingSpec(
     val chroma: Chroma,
@@ -39,6 +45,9 @@ data class EncodingSpec(
     val bFramesSupported: Boolean?
 )
 
+/**
+ * Contains the detailed capabilities for the specified [codec].
+ */
 @RegisterForReflection
 data class CodecDetails(
     val codec: Codec,
@@ -46,6 +55,9 @@ data class CodecDetails(
     val encodingSpecs: List<EncodingSpec>,
 )
 
+/**
+ * Contains the details codec support and capabilities for a encoding/decoding device.
+ */
 @RegisterForReflection
 data class Device(
     val driver: Driver,

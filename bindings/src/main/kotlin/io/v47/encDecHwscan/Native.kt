@@ -26,6 +26,9 @@ import java.lang.foreign.MemorySegment
 import java.lang.foreign.SymbolLookup
 import java.lang.foreign.ValueLayout
 
+/**
+ * Entrypoint for accessing the native library via the Java Foreign Function and Memory API.
+ */
 object Native {
     private val SCAN_DEVICES_HANDLE by lazy {
         Linker
@@ -45,12 +48,18 @@ object Native {
             )
     }
 
+    /**
+     * Loads the native library.
+     */
     fun load() {
         NativeLoader
             .Builder().build()
             .loadLibrary("enc_dec_hwscan")
     }
 
+    /**
+     * Calls the native library and takes care of memory allocation and clean-up.
+     */
     fun <T : Any> scanDevices(mapper: (MemorySegment) -> T) =
         Arena.ofConfined().use { arena ->
             var supportInfo: MemorySegment? = null
