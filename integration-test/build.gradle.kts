@@ -4,6 +4,8 @@ plugins {
     kotlin("plugin.allopen")
 
     alias(libs.plugins.quarkus)
+
+    alias(libs.plugins.detekt)
 }
 
 dependencies {

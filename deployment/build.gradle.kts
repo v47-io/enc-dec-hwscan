@@ -5,9 +5,6 @@ plugins {
     kotlin("kapt")
 
     alias(libs.plugins.detekt)
-    alias(libs.plugins.dokka)
-
-    `maven-publish`
 }
 
 configurations.getByName(getKaptConfigurationName(sourceSets.main.name)) {
@@ -26,15 +23,4 @@ dependencies {
 
     implementation(libs.quarkus.arc.deployment)
     implementation(libs.quarkus.core.deployment)
-}
-
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            pom {
-                name.set("Encode/Decode Hardware Scan :: Deployment")
-                description.set("Quarkus deployment module for enc-dec-hwscan")
-            }
-        }
-    }
 }
