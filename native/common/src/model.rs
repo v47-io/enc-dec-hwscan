@@ -124,9 +124,6 @@ impl CodecDetails {
         self.codec
     }
 
-    /// # Safety
-    ///
-    /// May lead to memory leaks if encoding_specs exist
     unsafe fn into_raw_decoding_specs(self) -> (*mut DecodingSpec, u32) {
         let Self {
             decoding_specs,
@@ -134,20 +131,26 @@ impl CodecDetails {
             ..
         } = self;
 
+        if !self.encoding_specs.is_null() {
+            drop_vec(self.encoding_specs, self.num_encoding_specs);
+        }
+
         mem::forget(self);
 
         (decoding_specs, num_decoding_specs)
     }
 
-    /// # Safety
-    ///
-    /// May lead to memory leaks if decoding_specs exist
     unsafe fn into_raw_encoding_specs(self) -> (*mut EncodingSpec, u32) {
         let Self {
             encoding_specs,
             num_encoding_specs,
             ..
         } = self;
+
+        if !self.decoding_specs.is_null() {
+            drop_vec(self.decoding_specs, self.num_decoding_specs);
+        }
+
         mem::forget(self);
 
         (encoding_specs, num_encoding_specs)
