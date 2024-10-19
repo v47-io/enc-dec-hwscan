@@ -1,6 +1,16 @@
 # Going Full Platform-Specific
 
-> This shit's gonna have Rust in it. &mdash; Deadpool (allegedly)
+> Nobody really needs anything else than 64-bit Linux.
+
+![bg left:25%](./images/korea-palace-nature.png)
+
+<!--
+At least until we get some proper consumer ARM hardware other
+than those godawful "Copilot PCs"
+
+Original "quote" was: This shit's gonna have Rust in it.
+Allegedly Deadpool said that.
+-->
 
 ---
 
@@ -11,7 +21,13 @@
 - Avatar of NIH
 - Drawing from vacation high
 
-<!-- add vacation photo collage -->
+<!--
+Spent most of my career doing consulting work, except one small exception where
+I actual worked for the same company that paid my salary.
+Nowadays I mainly do software architecture but I'm a coder at heart.
+-->
+
+> TODO: add vacation photo collage
 
 ---
 
@@ -20,8 +36,20 @@
 - Kotlin since 2015 (`M13`)
 - Rust since 2018 (`1.26.0`)
 
-<!-- TODO: talk about a few standout features of those releases -->
-<!-- add rust and kotlin logo -->
+![bg right](./images/kotlin-and-rust.png)
+
+<!--
+Standout features:
+  - Kotlin
+    - lateinit keyword (basically it's you knowing more than the compiler)
+    - current visibility rules (which are simple but sometimes not enough)
+      (there's currently a huge debate about additional rules on YouTrack)
+  - Rust
+    - main can return Result (no more need to create a wrapper for your)
+      (actual main function which just adds boilerplate)
+    - nicer match bindings for Option (no more requirement to specify)
+      (variants as references)
+-->
 
 ---
 
@@ -32,8 +60,24 @@
 - Single point of failure for e-commerce
 - Rearchitecting core insurance system
 
-<!-- TODO: mention it's just a few and just give one or two notable things for each -->
-<!-- add logos of various customers -->
+<!--
+Just a small excerpt and overview:
+
+- IoT
+  - Basically treated trains like huge IoT devices
+  - Had to contend with bad network infrastructure in Germany
+  - Clever caching and batching required for monitoring data
+- Neobanking
+  - For gamers 🤪
+  - Spent more time debugging external core banking system
+    than anything else
+- e-commerce
+  - Team ran the reverse proxy for the entire platform
+  - 1/2 hour of outage was a loss of 2 million EUR
+- Core Insurance System
+  - Project was sadly cancelled before we could really get started
+  - Although we did get some major observability and deployment wins
+-->
 
 ---
 
@@ -44,8 +88,14 @@
 - ez-dyndns-rs
 - ...
 
-<!-- TODO: mention how most projects seem to stem from Media Server 47 -->
-<!-- also, hostile Jaffree Fork -->
+<!--
+Most of my project seem to stem from Media Server 47, which is
+the reason for this talk. Kinda fits the pattern TBH.
+
+Jaffree is an FFmpeg API for JVM (wraps the ffmpeg executable).
+Hostile fork because of fundamental differences between original creator
+and me.
+-->
 
 ---
 
@@ -54,7 +104,7 @@
 - His Majesty, Rainer
 - Specific-Group Austria
 
-<!-- add SPG logo -->
+> TODO: add SPG logo
 
 ---
 
@@ -72,6 +122,8 @@
 ---
 
 ## Media Server 47
+
+- A steaming server
 
 <!-- main goals, ease of setup, autodetect everything -->
 <!-- why??? low barrier to entry, trying new stuff -->
@@ -176,7 +228,7 @@
 
 ---
 
-# INTERMISSION
+![bg 105%](./images/intermission-upscaled.png)
 
 <!-- insert bollywood intermission text here -->
 
@@ -206,9 +258,28 @@
 
 ### Alternatives
 
-<!-- why not use JNA -->
-<!-- why not use uniffi -->
-<!-- why not use Kotlin/Native -->
+- JNI
+- JNA
+- UniFFI (by Mozilla)
+- Kotlin/Native
+
+<!--
+- JNI
+  - unsound memory model
+  - clunky API
+- JNA
+  - prohibitively reflection heavy (not possible to get it work with GraalVM)
+  - large runtime overhead
+- UniFFI
+  - already got an interface language: C
+  - unsound resource management
+- Kotlin/Native
+  - don't want another garbage collector
+  - when do I execute the GC?
+
+Rust allows me to use the lingua franca of the OS, C, and brings a highly
+optimized memory management model which lets me focus on the fun parts.
+-->
 
 ---
 
@@ -270,13 +341,14 @@
 
 ## Takeaways
 
-<!-- JVM is still a powerful platform -->
-<!-- with powerful friends -->
-<!-- don't be afraid to think outside the box -->
+- The JVM is a powerful platform
+- Now with powerful friends!
+- Think outside the box!
 
 ---
 
 ## Links
 
+[enc-dec-hwscan @ GitHub](https://github.com/v47-io/enc-dec-hwscan)
 <!-- links to project on github -->
 <!-- links to helpful resources (one or two) -->
