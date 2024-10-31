@@ -94,7 +94,13 @@ the reason for this talk. Kinda fits the pattern TBH.
 
 Jaffree is an FFmpeg API for JVM (wraps the ffmpeg executable).
 Hostile fork because of fundamental differences between original creator
-and me.
+and me. For example: I want to use standard Java concurrency APIs like
+CompletionStage (which incidentally integrate nicely with other concurrency
+libraries like Kotlinx Coroutines or rxJava) but the original creator wasn't
+interested. Also he is managing all his process specific threads himself,
+which I think is unnecessary with libraries like NuProcess.
+Oh well, I will link to the project at the end of the presentation and you
+can check for yourself.
 -->
 
 ---
@@ -123,35 +129,84 @@ and me.
 
 ## Media Server 47
 
-- A steaming server
+- A streaming server
+- Zeroconf where possible
+- Testbed for things I want to try
 
-<!-- main goals, ease of setup, autodetect everything -->
-<!-- why??? low barrier to entry, trying new stuff -->
+<!--
+I can't believe it's been ten years since I started working on something
+like it xD
+It just took me that long to finally learn YAGNI and focus, even though
+I still sometimes fail at that.
+The main objectives for my media server are first and foremost to learn
+new stuff, to try new ways of structuring software, and also to test
+exciting technologies in the confines of a proper project instead of creating
+toy projects for problems that don't exist.
+I want it to adapt to the environment it runs on, instead of the user having
+to adapt the environment to it. It should detect most settings on its own,
+only requiring dynamic configuration by the user for critical stuff, e.g.
+security.
+For now the database and Valkey server are the only things a user would
+have to specify using environment variables.
+-->
 
 ---
 
 ### Jellyfin
 
-<!-- encoding capabilities, esp jellyfin-ffmpeg -->
-<!-- mention .NET (bleh) -->
+- Fork of Emby when it went closed-source
+- Very good transcoding capabilities
+- _NOT_ zeroconf
 
-<!-- add jellyfin screenshot, stylized -->
+<!--
+Also, it's written for .NET using C# and ASP.NET, which I absolutely don'y
+care about. But that's my idiological stance, which doesn't have to align
+with others'.
+It's transcoding capabilities however are excellent, they even maintain
+their own FFmpeg port with their own patches (which take a while to upstream).
+My media server is going to use their FFmpeg port, simply because it's proven
+and feature-complete for such a scenario. So, shout out to Jellyfin!
+However, hardware accelerated transcoding requires a bit of configuration, and
+the client capabilities aren't reliably detected which can lead to playback
+failures with unsupported media formats.
+-->
+
+<!-- TODO: add jellyfin screenshot, stylized -->
 
 ---
 
 ### Plex
 
-<!-- full media consumption platform for the home user -->
-<!-- but hostile to the customer, e.g. registration required for HW transcoding -->
+- It's got everything: Local media, TV, Radio, etc...
+- Not very customer friendly (not FOSS)
+- Important features behind paywall
 
-<!-- add plex promo art -->
+<!--
+Plex has turned into a business. It used to be the one-stop shop for all
+homestreamers' desires, but it has turned against them. Now it's just for
+the normies who don't necessarily have the required technical acumen to
+run a proper homelab (i.e. people who use Synology or QNAP "NAS" solutions).
+The part where it's hostile comes from the fact that they require a user-
+registration and login even when self-hosting.
+And if you want to use your hardware for hardware accelerated transcoding
+you need to pay a monthly fee, just for the privilege of utilizing your
+own hardware to the fullest. (yuck)
+-->
+
+<!-- TODO: add plex promo art -->
 
 ---
 
 ### Others...
 
-<!-- e.g. Emby, etc... -->
+- Emby
+- and a boatload of other proprietary solutions...
 
+<!--
+Don't want to spend too much time on stuff that doesn't matter,
+like Emby (ever since they went closed-source) and other proprietary
+software. Just know that it exists, I don't like it, and move on.
+-->
 ---
 
 ## Constraints
@@ -352,3 +407,5 @@ optimized memory management model which lets me focus on the fun parts.
 [enc-dec-hwscan @ GitHub](https://github.com/v47-io/enc-dec-hwscan)
 <!-- links to project on github -->
 <!-- links to helpful resources (one or two) -->
+
+<!-- link to original Jaffree and my own Jaffree -->
